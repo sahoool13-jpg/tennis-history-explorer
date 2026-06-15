@@ -32,3 +32,25 @@ Requires the raw data already fetched (`./fetch_data.sh`) and the deps in
 H2H rebuilt from `matches.parquet` returns 41 (17–24), match rows == 2× source,
 `won.sum()` == source match count, and every `player_id`/`opp_id` in matches
 exists in `players.parquet`.
+
+# Phase 2 — Aggregates
+
+`aggregate.py` reads the Phase 1 artifacts (read-only) and pre-computes
+frontend tables into `data/built/`:
+
+```bash
+python pipeline/aggregate.py
+```
+
+- **`surface_splits.parquet`** — one row per `(player_id, surface)`: matches,
+  wins, losses, win_pct. The hero table.
+- **`player_summary.parquet`** — one row per player who appears in matches
+  (not the full 66k dim). Totals, first/last match dates, career-high rank and
+  its spells/weeks (a new spell starts after a gap > `SPELL_GAP_DAYS`),
+  weeks at No.1, tour-level titles, Olympic golds, and primary surface.
+- **`h2h.parquet`** — directed head-to-head pairs (both A→B and B→A).
+- **`surface_palette.json`** — design tokens (surface → hex) for Phase 3.
+
+The Phase 2 gate cross-checks internal consistency (surface/h2h sums ==
+summary totals), referential integrity against `players.parquet`, the Fed–Nadal
+anchor in both directions, and smell tests (Nadal clay > .90, Federer peak == No.1).
