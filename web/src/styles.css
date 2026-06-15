@@ -1,0 +1,120 @@
+/* Phase 3 functional pass: clean, uncluttered baseline. The dedicated styling
+   pass comes next — keep this neutral and let the data read clearly. Surface
+   colours are injected from surface_palette.json at runtime, never here. */
+:root {
+  --ink: #18181b;
+  --muted: #6b7280;
+  --bg: #ffffff;
+  --panel: #f6f6f4;
+  --line: #e6e6e3;
+  --accent: #c0392b; /* UI highlight only (not a surface colour) */
+  --maxw: 880px;
+  --radius: 8px;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.45;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line); }
+a:hover { border-color: var(--ink); }
+.muted { color: var(--muted); }
+
+.topbar {
+  border-bottom: 1px solid var(--line);
+  padding: 14px 20px;
+}
+.topbar__brand { font-weight: 650; letter-spacing: -0.01em; border: none; }
+
+.content { max-width: var(--maxw); margin: 0 auto; padding: 28px 20px 64px; }
+.sitefoot { max-width: var(--maxw); margin: 0 auto; padding: 16px 20px 40px; font-size: 13px; }
+
+/* --- home / search ------------------------------------------------------- */
+.home-title { font-size: 28px; letter-spacing: -0.02em; margin: 0 0 6px; }
+.home-intro { margin-bottom: 18px; }
+.home-h2h { margin-top: 18px; }
+
+.searchbox { position: relative; max-width: 460px; }
+.searchbox__input {
+  width: 100%; padding: 11px 13px; font-size: 15px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg);
+}
+.searchbox__input:focus { outline: 2px solid var(--ink); outline-offset: 1px; border-color: var(--ink); }
+.searchbox__results {
+  list-style: none; margin: 6px 0 0; padding: 4px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg);
+  max-height: 320px; overflow: auto;
+}
+.searchbox__results:empty { display: none; }
+.searchbox__item {
+  display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  padding: 8px 10px; border-radius: 6px; cursor: pointer;
+}
+.searchbox__item:hover, .searchbox__item:focus { background: var(--panel); outline: none; }
+.searchbox__name { font-weight: 550; }
+.searchbox__meta { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+/* --- player header ------------------------------------------------------- */
+.player-header { border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 26px; }
+.player-header__name { font-size: 30px; letter-spacing: -0.02em; margin: 0 0 2px; }
+.player-header__ioc { font-size: 16px; color: var(--muted); font-weight: 500; }
+.player-header__stats { display: flex; gap: 30px; margin: 16px 0 12px; flex-wrap: wrap; }
+.stat__num { font-size: 24px; font-weight: 650; letter-spacing: -0.01em; }
+.stat__lab { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.player-header__spell { font-size: 14px; margin: 0; }
+
+/* --- surface split (hero) ------------------------------------------------ */
+.surface-split { margin: 0 0 36px; }
+.surface-split__title, .career-arc__title, .h2h-col__name {
+  font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted); margin: 0 0 14px;
+}
+.surface-row {
+  display: grid; grid-template-columns: 92px 1fr 170px; align-items: center;
+  gap: 14px; padding: 7px 0;
+}
+.surface-row__label { display: flex; align-items: center; gap: 8px; font-weight: 550; }
+.surface-row__dot { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.surface-row__track { height: 22px; background: var(--panel); border-radius: 5px; overflow: hidden; }
+.surface-row__fill { height: 100%; border-radius: 5px 0 0 5px; min-width: 2px; }
+.surface-row__stat { text-align: right; }
+.surface-row__pct { font-weight: 650; font-variant-numeric: tabular-nums; }
+.surface-row__count { display: block; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* --- career arc ---------------------------------------------------------- */
+.career-arc { margin: 0 0 32px; }
+.career-arc figure { margin: 0; max-width: 100%; }
+.career-arc__caption { font-size: 13px; margin-top: 6px; }
+
+/* --- actions ------------------------------------------------------------- */
+.player-actions { margin-top: 8px; }
+.btn {
+  font: inherit; padding: 9px 14px; border: 1px solid var(--line);
+  border-radius: var(--radius); background: var(--panel); cursor: pointer;
+}
+.btn:hover { border-color: var(--ink); }
+
+/* --- h2h ----------------------------------------------------------------- */
+.h2h-picker { display: flex; gap: 16px; flex-wrap: wrap; margin: 14px 0 24px; }
+.h2h-picker .searchbox { flex: 1 1 240px; }
+.h2h-record { margin: 8px 0 28px; }
+.h2h-score {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px;
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;
+}
+.h2h-score__side { text-align: center; }
+.h2h-score__name { font-weight: 600; margin-bottom: 6px; }
+.h2h-score__wins { font-size: 44px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.h2h-score__mid { text-align: center; font-size: 13px; }
+.h2h-score__meetings { font-weight: 600; }
+.h2h-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.h2h-col__name { color: var(--ink); text-transform: none; letter-spacing: -0.01em; font-size: 16px; }
+
+@media (max-width: 640px) {
+  .surface-row { grid-template-columns: 74px 1fr; grid-template-areas: "label track" "stat stat"; }
+  .surface-row__stat { grid-area: stat; text-align: left; }
+  .h2h-cols { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

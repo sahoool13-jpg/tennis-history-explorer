@@ -12,3 +12,10 @@ notebooks/.ipynb_checkpoints/
 
 # OS / editor cruft
 .DS_Store
+
+# Web app (Phase 3)
+web/node_modules/
+web/dist/
+# Parquet/palette are copied from data/built at dev/build time — single source
+# of truth stays in data/built, never duplicated into the app.
+web/public/data/
