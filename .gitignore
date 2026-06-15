@@ -1,0 +1,14 @@
+# Raw upstream data — fetched locally via fetch_data.sh, never committed
+data/raw/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Notebooks
+notebooks/.ipynb_checkpoints/
+
+# OS / editor cruft
+.DS_Store
