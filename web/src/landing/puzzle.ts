@@ -171,7 +171,7 @@ export function renderPuzzle(
 
   async function renderEnd(won: boolean): Promise<void> {
     const rallyHref = `${import.meta.env.BASE_URL}#/player/${target.player_id}`;
-    const grid = [`Rally Daily #${date.dayNumber} ${won ? guesses.length : 'X'}/${MAX_GUESSES}`]
+    const grid = [`Unforced Error Daily #${date.dayNumber} ${won ? guesses.length : 'X'}/${MAX_GUESSES}`]
       .concat(guesses.map((g) => compare(g, target).map((c) => EMOJI[c.status]).join('')))
       .join('\n');
     endWrap.innerHTML = `

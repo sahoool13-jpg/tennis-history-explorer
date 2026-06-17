@@ -1,9 +1,20 @@
-# Tennis History Explorer
+# Unforced Error
 
-An explorer for professional tennis history, built on
-[Jeff Sackmann's](https://github.com/JeffSackmann) public ATP and WTA datasets.
-Raw CSVs are transformed into a unified columnar store and queried directly in
-the browser with DuckDB-wasm — no backend required.
+**Unforced Error** is a quarter-century of men's tennis, explored two ways. It is
+the umbrella project (unforcederror.app) over two sibling sites that share one
+data pipeline and design language:
+
+- **Rally** — players & surfaces: careers, surface splits, head-to-heads, eras.
+- **Match Point** — the matches by their scoreline: blowouts, marathons,
+  tiebreaks, comebacks, retirements.
+
+A daily front door (“on this day” + a guess-the-player puzzle) sits above both.
+Built on [Jeff Sackmann's](https://github.com/JeffSackmann) public ATP and WTA
+datasets: raw CSVs are transformed into a unified columnar store and queried
+directly in the browser with DuckDB-wasm — no backend required.
+
+> The repository, build paths, and deploy config remain `tennis-history-explorer`;
+> "Unforced Error" is the family's display name.
 
 ## Project layout
 

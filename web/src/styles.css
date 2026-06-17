@@ -690,14 +690,21 @@ a:hover { color: var(--accent); }
 body.landing-mode .topbar,
 body.landing-mode .sitefoot { display: none; }
 
-/* ----- family masthead --------------------------------------------------- */
+/* ----- family masthead: Unforced Error (parent) over the two sections ---- */
 .lp-masthead { padding: var(--s4) 0 var(--s6); border-bottom: 1px solid var(--line); margin-bottom: var(--s7); }
-.lp-family { display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap; }
-.lp-fam { display: inline-flex; flex-direction: column; gap: 5px; }
-.lp-fam .brand__word, .lp-fam .mp-word { font-size: 1.7rem; }
-.lp-fam__amp { font-family: var(--font-display); font-weight: 500; font-size: 1.4rem; color: var(--ink-faint); }
-.lp-family__tag { margin: var(--s4) 0 0; color: var(--ink-soft); font-size: 1rem; max-width: 52ch; }
-.lp-family__tag strong { color: var(--ink); font-weight: 600; }
+.lp-umbrella { margin-bottom: var(--s5); }
+.lp-brand {
+  display: block; font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(2rem, 6vw, 3.1rem); line-height: 0.95; letter-spacing: -0.035em;
+  color: var(--ink);
+}
+.lp-brand__tag { margin: var(--s3) 0 0; color: var(--ink-soft); font-size: 1.02rem; }
+/* the two sub-brands, presented as the sections within Unforced Error */
+.lp-family { display: flex; align-items: flex-start; gap: var(--s4) var(--s7); flex-wrap: wrap; }
+.lp-fam { display: inline-flex; flex-direction: column; gap: 6px; }
+.lp-fam__head { display: inline-flex; flex-direction: column; gap: 5px; }
+.lp-fam .brand__word, .lp-fam .mp-word { font-size: 1.45rem; }
+.lp-fam__desc { font-family: var(--font-head); font-weight: 600; font-size: var(--t-cap); color: var(--ink-soft); }
 
 /* ----- hero: On This Day ------------------------------------------------- */
 .lp-hero { margin-bottom: var(--s8); }

@@ -59,7 +59,8 @@ export async function renderLanding(mount: HTMLElement): Promise<void> {
   // --- footer -------------------------------------------------------------
   const foot = document.createElement('footer');
   foot.className = 'sitefoot lp-foot';
-  foot.innerHTML = `Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0 ·
+  foot.innerHTML = `<strong>Unforced Error</strong> — Rally &amp; Match Point ·
+    Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0 ·
     “On this day” and the daily puzzle read only recorded tour-level matches, 2000–present.`;
   mount.appendChild(foot);
 }
@@ -68,14 +69,21 @@ function masthead(): HTMLElement {
   const m = document.createElement('header');
   m.className = 'lp-masthead';
   m.innerHTML = `
-    <div class="lp-family">
-      <span class="lp-fam lp-fam--rally"><span class="brand__word">Rally</span>
-        <span class="brand__mark" aria-hidden="true"><i></i><i></i><i></i></span></span>
-      <span class="lp-fam__amp" aria-hidden="true">&</span>
-      <span class="lp-fam lp-fam--mp"><span class="mp-word"><span>Match</span><span class="mp-word__pt">Point</span></span></span>
+    <div class="lp-umbrella">
+      <span class="lp-brand">Unforced&nbsp;Error</span>
+      <p class="lp-brand__tag">A quarter-century of men's tennis, read two ways.</p>
     </div>
-    <p class="lp-family__tag">Two ways into a quarter-century of men's tennis —
-      <strong>by surface</strong>, and <strong>by the scoreline</strong>.</p>`;
+    <div class="lp-family" role="list">
+      <span class="lp-fam lp-fam--rally" role="listitem">
+        <span class="lp-fam__head"><span class="brand__word">Rally</span>
+          <span class="brand__mark" aria-hidden="true"><i></i><i></i><i></i></span></span>
+        <span class="lp-fam__desc">Players &amp; surfaces</span>
+      </span>
+      <span class="lp-fam lp-fam--mp" role="listitem">
+        <span class="lp-fam__head"><span class="mp-word"><span>Match</span><span class="mp-word__pt">Point</span></span></span>
+        <span class="lp-fam__desc">By the scoreline</span>
+      </span>
+    </div>`;
   return m;
 }
 
