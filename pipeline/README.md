@@ -55,6 +55,24 @@ python pipeline/aggregate.py
   `h2h.parquet` for a known pair (Federer–Djokovic: 51 meetings / 23 wins).
 - **`surface_palette.json`** — design tokens (surface → hex) for Phase 3.
 
+# Phase 3 data — eras
+
+`era.py` builds **`era_stats.parquet`** (one row per year, 2000+) for the "How
+the game changed" view, from `matches.parquet` (match-level rows recovered via
+`won == True`):
+
+```bash
+python pipeline/era.py
+```
+
+Per year: match counts and surface mix (share per surface), `avg_minutes` with
+its mandatory `minutes_coverage` (fraction of matches with a recorded time),
+and competitive-concentration metrics (`distinct_champions`, `total_titles`,
+`titles_by_top_player`). Gated by reconciling per-year surface counts to the
+year total and the grand total to 79,299; sample surface-mix and minutes-
+coverage are printed for review. No court-pace/speed metric is computed — the
+dataset has no such column.
+
 The Phase 2 gate cross-checks internal consistency (surface/h2h sums ==
 summary totals), referential integrity against `players.parquet`, the Fed–Nadal
 anchor in both directions, and smell tests (Nadal clay > .90, Federer peak == No.1).

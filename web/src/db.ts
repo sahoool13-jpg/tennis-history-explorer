@@ -9,12 +9,12 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 
 import type {
   PlayerSearchRow, PlayerSummary, SurfaceSplit, CareerArcPoint, H2HRow,
-  H2HBySurfaceRow, Meeting,
+  H2HBySurfaceRow, Meeting, EraStat,
 } from './types';
 
 const TABLES = [
   'surface_splits', 'player_summary', 'h2h', 'h2h_by_surface', 'matches',
-  'rankings',
+  'rankings', 'era_stats',
 ] as const;
 
 let connPromise: Promise<duckdb.AsyncDuckDBConnection> | null = null;
@@ -151,6 +151,11 @@ export function getMeetings(
       WHERE player_id = ${intId(id1)} AND opp_id = ${intId(id2)}
       ORDER BY tourney_date, match_id`,
   );
+}
+
+// Tour-evolution aggregates, one row per year (2000+).
+export function getEraStats(): Promise<EraStat[]> {
+  return query<EraStat>(`SELECT * FROM era_stats ORDER BY year`);
 }
 
 // Per-surface breakdown of one directed rivalry (their actual meetings).

@@ -87,6 +87,9 @@ a:hover { color: var(--accent); }
   max-width: var(--maxw); margin: 0 auto; padding: var(--s5) var(--s5) var(--s4);
 }
 .brand { display: inline-flex; flex-direction: column; gap: 6px; }
+.topnav { display: flex; gap: var(--s5); font-family: var(--font-head); font-weight: 600; font-size: 0.92rem; }
+.topnav a { color: var(--ink-soft); border-bottom: 2px solid transparent; padding-bottom: 2px; }
+.topnav a:hover { color: var(--ink); border-color: var(--accent); }
 .brand__word {
   font-family: var(--font-display);
   font-weight: 800;
@@ -372,6 +375,59 @@ a:hover { color: var(--accent); }
 .rs-bar__b { background: color-mix(in srgb, var(--c) 48%, var(--paper)); }
 .rs-split { display: flex; justify-content: space-between; margin-top: 6px; font-size: var(--t-cap); color: var(--ink-soft); }
 .rs-split strong { font-family: var(--font-display); font-weight: 700; color: var(--ink); margin: 0 2px; }
+
+/* ----- eras / "how the game changed" ------------------------------------- */
+.era-header { margin-bottom: var(--s8); }
+.era-scope {
+  display: inline-block; font-family: var(--font-head); font-weight: 600;
+  font-size: var(--t-eyebrow); text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--ink-soft); padding: 5px 10px; border: 1px solid var(--line);
+  border-radius: 100px; margin: 0 0 var(--s4);
+}
+.era-title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: var(--t-h1); letter-spacing: -0.03em; margin: 0 0 var(--s4);
+}
+.era-standfirst { font-size: 1.05rem; color: var(--ink-soft); max-width: 60ch; margin: 0; }
+
+.era-chart { margin-bottom: var(--s8); }
+.era-take {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: var(--t-h2); letter-spacing: -0.02em; line-height: 1.1;
+  margin: 0 0 var(--s4); max-width: 26ch;
+}
+.era-cap { margin: var(--s3) 0 0; font-size: var(--t-cap); max-width: 70ch; }
+.era-svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+.era-grid { stroke: var(--line-soft); stroke-width: 1; }
+.era-ylab, .era-xlab { fill: var(--ink-faint); font-family: var(--font-body); font-size: 11px; }
+.era-band { stroke: var(--paper); stroke-width: 0.75; }
+.era-line { stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.era-line-seg { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
+.era-line-seg--low { stroke: var(--ink-faint); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.era-dot { fill: var(--ink); }
+.era-dot--low { fill: var(--paper); stroke: var(--ink-faint); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.era-cov { fill: var(--ink-faint); opacity: 0.28; }
+.era-bar { fill: var(--ink); opacity: 0.78; }
+.era-guide { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 3 3;
+  transition: opacity var(--dur-fast) var(--ease-standard); }
+.era-overlay { cursor: crosshair; }
+
+/* rise-in entrance for chart marks */
+.era-rise { opacity: 0; transform: translateY(10px); }
+.era-rise.in { opacity: 1; transform: none; }
+
+/* tooltip rows for stacked surface mix */
+.tt-row { display: flex; align-items: center; gap: var(--s2); }
+.tt-row b { margin-left: auto; font-weight: 700; }
+.tt-sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+
+@media (max-width: 560px) {
+  .era-ylab, .era-xlab { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .era-rise { opacity: 1; transform: none; }
+}
 
 /* ----- states ------------------------------------------------------------ */
 .loading { color: var(--ink-faint); font-size: 0.95rem; }

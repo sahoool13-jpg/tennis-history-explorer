@@ -62,6 +62,19 @@ export interface H2HBySurfaceRow {
   opp_wins: number;
 }
 
+export interface EraStat {
+  year: number;
+  matches: number;
+  n_Hard: number; n_Clay: number; n_Grass: number; n_Carpet: number; n_Unknown: number;
+  share_Hard: number; share_Clay: number; share_Grass: number;
+  share_Carpet: number; share_Unknown: number;
+  avg_minutes: number | null;
+  minutes_coverage: number;
+  distinct_champions: number;
+  total_titles: number;
+  titles_by_top_player: number;
+}
+
 // One individual meeting between two players (from matches.parquet).
 export interface Meeting {
   date: string;

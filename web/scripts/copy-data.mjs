@@ -20,6 +20,7 @@ const WANTED = new Set([
   'h2h_by_surface.parquet',
   'matches.parquet', // per-meeting fact, for the rivalry timeline
   'rankings.parquet',
+  'era_stats.parquet', // tour-evolution aggregates for the eras view
   'surface_palette.json',
 ]);
 let n = 0;
