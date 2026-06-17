@@ -1,11 +1,12 @@
 // Match Point — the matches-focused companion to Rally. Its own front door and
 // wordmark, built on the SAME design language (shared styles.css tokens, fonts,
 // motion). Separate entry point (matchpoint.html); it does not touch Rally's
-// main.ts. This is the STEP 0 shell: nav + a placeholder hero. Leaderboards land
-// after the score-parser gate is approved.
+// main.ts. The score-led boards read the verified match_scores aggregates.
 import './styles.css';
 import { route, setNotFound, startRouter } from './router';
 import { prefersReducedMotion, STAGGER_MS } from './motion';
+import { loadPalette } from './palette';
+import { initDB } from './db';
 import {
   renderBlowouts, renderMarathons, renderTiebreaks, renderComebacks,
   renderRetirements,
@@ -113,4 +114,10 @@ setNotFound(() => {
   content.innerHTML = `<p class="muted">Page not found. <a href="#/">Back to Match Point</a>.</p>`;
 });
 
-startRouter();
+async function boot(): Promise<void> {
+  await loadPalette(); // surface colours must be ready before any board renders
+  void initDB(); // warm the DuckDB connection in the background
+  startRouter();
+}
+
+void boot();
