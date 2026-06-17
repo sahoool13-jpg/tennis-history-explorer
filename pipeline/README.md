@@ -113,3 +113,37 @@ straight sets + bagel, Isner–Mahut tiebreaks & 92–91 games, a retirement), a
 internal-consistency assertion that **every completed match has winner
 sets_won > loser sets_won** (violations printed), and a row reconciliation to
 79,299 unique `match_id`s.
+
+# Phase 2.7 data — Match Point aggregates
+
+`match_point_stats.py` reads the verified `match_scores.parquet` (NEVER
+re-parses raw scores) joined to `matches.parquet` for player identity, and
+writes two aggregates for the Match Point leaderboards:
+
+```bash
+python pipeline/match_point_stats.py
+```
+
+- **`mp_player_stats.parquet`** — one row per player: `bagels_dished` /
+  `bagels_received` (6–0 sets), `breadsticks_dished` / `breadsticks_received`
+  (6–1 sets), `tiebreaks_played` / `tiebreaks_won` (set tiebreaks only; the
+  winner of each tiebreak set is read from the structured `sets_detail`),
+  `retired` (matches the player retired from — they are the loser of record),
+  and `wins_by_retirement`.
+- **`mp_match_facts.parquet`** — one row per match (79,299): `total_games`,
+  `minutes_per_game`, `minutes_plausible`, and `is_comeback`.
+  - `minutes_plausible` guards the "longest matches" board: the raw `minutes`
+    column has data-entry errors (e.g. a straight-sets match logged at 1146
+    min), so a match is plausible only if `minutes > 0` and `1.5 ≤
+    minutes/game ≤ 12.0`. The true record (Isner–Mahut, 665 min) passes; the
+    corrupt rows are filtered out.
+  - `is_comeback` flags completed best-of-5 matches won from two sets down,
+    derived from the first two entries of `sets_detail`.
+
+Gate (must pass before writing): per-player sums reconcile to direct totals —
+bagels dished == direct 6–0 sets == bagels received; same for breadsticks;
+tiebreaks played == 2 × total tiebreaks and tiebreaks won == total tiebreaks;
+retirements suffered == won-via == total RET. Plus spot checks (Isner's
+tiebreak load, the single longest plausible match ≈ 665 min, the 1146-min row
+flagged not-plausible), completed-board integrity (zero retirements; every
+comeback is a completed 3–2 best-of-5), and row reconciliation.

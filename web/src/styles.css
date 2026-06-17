@@ -602,3 +602,80 @@ a:hover { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   .mp-board__row { opacity: 1; transform: none; }
 }
+
+/* ----- match-tiebreak cell in a scoreline -------------------------------- */
+.mp-set--mtb { letter-spacing: -0.01em; }
+.mp-set--mtb::before { content: '['; color: var(--ink-faint); font-weight: 500; }
+.mp-set--mtb::after { content: ']'; color: var(--ink-faint); font-weight: 500; }
+.mp-set--raw { font-family: var(--font-head); font-weight: 700; color: var(--ink-soft); font-size: 0.6em; }
+
+/* ----- editorial takeaway ------------------------------------------------- */
+.mp-take {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: var(--t-h2); line-height: 1.12; letter-spacing: -0.02em;
+  margin: 0 0 var(--s6); max-width: 30ch;
+}
+
+/* ----- match list (scoreline-led rows) ----------------------------------- */
+.mp-matchlist { margin: 0 0 var(--s8); }
+.mp-match {
+  display: grid; grid-template-columns: 2.2em 1fr; gap: var(--s4);
+  align-items: start; padding: var(--s5) 0; border-top: 1px solid var(--line-soft);
+  opacity: 0; transform: translateY(8px);
+  transition: opacity var(--dur-med) var(--ease-entrance),
+              transform var(--dur-med) var(--ease-entrance);
+}
+.mp-match.in { opacity: 1; transform: none; }
+.mp-match:first-child { border-top: none; }
+.mp-match__rank {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
+  color: var(--ink-faint); line-height: 1.4;
+}
+.mp-match__body { min-width: 0; }
+.mp-match__score .mp-scoreline { font-size: clamp(1.5rem, 5vw, 2.1rem); }
+.mp-match__players { margin: var(--s3) 0 var(--s2); font-size: 1.02rem; }
+.mp-match__players a { font-family: var(--font-head); font-weight: 700; border-bottom: 1px solid transparent; }
+.mp-match__players a:hover { color: var(--mp-accent); border-color: var(--mp-accent); }
+.mp-match__beat { color: var(--ink-faint); font-style: italic; margin: 0 0.35em; font-weight: 500; }
+.mp-match__meta { margin: 0; font-size: var(--t-cap); color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 0.35em; }
+.mp-match__badge { margin-left: auto; font-family: var(--font-display); font-weight: 700; color: var(--mp-accent); font-size: 0.95rem; }
+.mp-dot { width: 9px; height: 9px; border-radius: 3px; background: var(--c, var(--ink-faint)); flex: none; display: inline-block; }
+.mp-sep { color: var(--line); }
+
+@media (prefers-reduced-motion: reduce) { .mp-match { opacity: 1; transform: none; } }
+
+/* ----- player boards: Match Point accent on the leaders ------------------ */
+.mp-lb { --lb-accent: var(--mp-accent); }
+
+/* ----- match-length distribution ----------------------------------------- */
+.mp-dist { margin-top: var(--s5); }
+.mp-hist-svg { display: block; width: 100%; height: auto; margin: var(--s4) 0 var(--s5); overflow: visible; }
+.mp-hist-grid { stroke: var(--line-soft); stroke-width: 1; }
+.mp-hist-lab { fill: var(--ink-faint); font-family: var(--font-body); font-size: 11px; }
+.mp-bar { transition: opacity var(--dur-med) var(--ease-entrance), transform var(--dur-med) var(--ease-entrance);
+  transform-box: fill-box; transform-origin: bottom; opacity: 0; transform: scaleY(0.4); }
+.mp-bar.in { opacity: 0.85; transform: none; }
+
+.mp-surf-cov { display: flex; flex-direction: column; }
+.mp-surf-cov__row {
+  display: grid; grid-template-columns: 1fr auto auto; gap: var(--s4); align-items: baseline;
+  padding: var(--s3) 0; border-top: 1px solid var(--line-soft);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--dur-med) var(--ease-entrance), transform var(--dur-med) var(--ease-entrance);
+}
+.mp-surf-cov__row.in { opacity: 1; transform: none; }
+.mp-surf-cov__name { font-family: var(--font-head); font-weight: 600; display: inline-flex; align-items: center; gap: var(--s3); }
+.mp-surf-cov__avg { font-family: var(--font-display); font-weight: 700; }
+.mp-surf-cov__avg small { font-family: var(--font-body); font-weight: 400; color: var(--ink-faint); font-size: 0.7em; }
+.mp-surf-cov__cov { text-align: right; font-size: var(--t-cap); }
+
+@media (max-width: 560px) {
+  .mp-match { grid-template-columns: 1.6em 1fr; gap: var(--s3); }
+  .mp-match__badge { margin-left: 0; }
+  .mp-surf-cov__row { grid-template-columns: 1fr auto; }
+  .mp-surf-cov__cov { grid-column: 1 / -1; text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mp-bar, .mp-surf-cov__row { opacity: 1; transform: none; }
+  .mp-bar { opacity: 0.85; }
+}

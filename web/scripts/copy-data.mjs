@@ -21,6 +21,9 @@ const WANTED = new Set([
   'matches.parquet', // per-meeting fact, for the rivalry timeline
   'rankings.parquet',
   'era_stats.parquet', // tour-evolution aggregates for the eras view
+  'match_scores.parquet', // Step 0 structured scores, for Match Point
+  'mp_player_stats.parquet', // Match Point per-player aggregates
+  'mp_match_facts.parquet', // Match Point per-match derived flags
   'surface_palette.json',
 ]);
 let n = 0;

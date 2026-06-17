@@ -10,11 +10,15 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 import type {
   PlayerSearchRow, PlayerSummary, SurfaceSplit, CareerArcPoint, H2HRow,
   H2HBySurfaceRow, Meeting, EraStat, LeaderRow, RivalryRow,
+  MpMatch, MpPlayerRow, MpSurfaceLength, MpLengthBucket,
 } from './types';
 
 const TABLES = [
   'surface_splits', 'player_summary', 'h2h', 'h2h_by_surface', 'matches',
   'rankings', 'era_stats',
+  // Match Point artifacts (Step 0 scores + gated aggregates). Registered here
+  // additively; Rally's views don't query them.
+  'match_scores', 'mp_player_stats', 'mp_match_facts',
 ] as const;
 
 let connPromise: Promise<duckdb.AsyncDuckDBConnection> | null = null;
@@ -204,6 +208,124 @@ export function lbRivalries(n = 10): Promise<RivalryRow[]> {
        JOIN player_summary b ON h.opp_id = b.player_id
       WHERE h.player_id < h.opp_id
       ORDER BY h.meetings DESC LIMIT ${n | 0}`);
+}
+
+// --- Match Point: matches read by their scoreline ---------------------------
+// Every query reads the verified match_scores columns and the gated
+// mp_* aggregates — no score is re-parsed here. The winner-perspective rows of
+// `matches` (won = TRUE) carry winner-first scores and both players' identity.
+const MP_MATCH_COLS = `
+  m.match_id AS match_id,
+  m.player_id AS winner_id, m.player_name AS winner_name,
+  m.opp_id AS loser_id, m.opp_name AS loser_name,
+  ms.set_scores AS set_scores,
+  m.tourney_name AS tourney_name, m.surface AS surface,
+  CAST(m.tourney_date AS VARCHAR) AS date,
+  m.round AS round, m.level_label AS level_label, m.best_of AS best_of,
+  m.minutes AS minutes,
+  ms.games_won_winner AS games_won_winner, ms.games_won_loser AS games_won_loser,
+  ms.sets_won_winner AS sets_won_winner, ms.sets_won_loser AS sets_won_loser`;
+
+// Longest completed matches by minutes. Minutes-based → only matches whose
+// minutes pass the gated plausibility flag (the raw column has data errors);
+// retirements are excluded via is_completed.
+export function mpLongestMatches(n = 12): Promise<MpMatch[]> {
+  return query<MpMatch>(
+    `SELECT ${MP_MATCH_COLS}
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+       JOIN mp_match_facts mf ON m.match_id = mf.match_id
+      WHERE m.won AND ms.is_completed AND mf.minutes_plausible
+      ORDER BY m.minutes DESC LIMIT ${n | 0}`);
+}
+
+// Most lopsided completed matches: fewest games conceded by the winner, then
+// most sets won (so a best-of-5 triple bagel outranks a double bagel).
+export function mpBiggestBlowouts(n = 12): Promise<MpMatch[]> {
+  return query<MpMatch>(
+    `SELECT ${MP_MATCH_COLS}
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+      WHERE m.won AND ms.is_completed
+      ORDER BY ms.games_won_loser ASC, ms.sets_won_winner DESC,
+               ms.games_won_winner ASC LIMIT ${n | 0}`);
+}
+
+// Best-of-5 matches won from two sets down (gated is_comeback flag), recent first.
+export function mpComebacks(n = 14): Promise<MpMatch[]> {
+  return query<MpMatch>(
+    `SELECT ${MP_MATCH_COLS}
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+       JOIN mp_match_facts mf ON m.match_id = mf.match_id
+      WHERE m.won AND mf.is_comeback
+      ORDER BY m.tourney_date DESC, m.match_id LIMIT ${n | 0}`);
+}
+
+// --- per-player Match Point boards (mp_player_stats, ioc joined for display) -
+function mpBoard(
+  valueExpr: string, whereExpr: string, orderExpr: string,
+  detailExpr = 'NULL', n = 10,
+): Promise<MpPlayerRow[]> {
+  return query<MpPlayerRow>(
+    `SELECT s.player_id AS player_id, s.player_name AS player_name,
+            p.ioc AS ioc, s.matches AS matches,
+            ${valueExpr} AS value, ${detailExpr} AS detail
+       FROM mp_player_stats s
+       LEFT JOIN player_summary p ON s.player_id = p.player_id
+      WHERE ${whereExpr}
+      ORDER BY ${orderExpr} LIMIT ${n | 0}`);
+}
+
+export const mpBagelsDished = (floor = 50, n = 10) =>
+  mpBoard('s.bagels_dished', `s.matches >= ${floor | 0} AND s.bagels_dished > 0`,
+          's.bagels_dished DESC, s.matches ASC', 'NULL', n);
+export const mpBreadsticksDished = (floor = 50, n = 10) =>
+  mpBoard('s.breadsticks_dished', `s.matches >= ${floor | 0} AND s.breadsticks_dished > 0`,
+          's.breadsticks_dished DESC, s.matches ASC', 'NULL', n);
+export const mpTiebreaksPlayed = (floor = 50, n = 10) =>
+  mpBoard('s.tiebreaks_played', `s.matches >= ${floor | 0} AND s.tiebreaks_played > 0`,
+          's.tiebreaks_played DESC',
+          `CAST(s.tiebreaks_won AS VARCHAR) || ' won'`, n);
+export const mpTiebreakRate = (floor = 100, n = 10) =>
+  mpBoard('s.tiebreaks_won * 1.0 / s.tiebreaks_played',
+          `s.tiebreaks_played >= ${floor | 0}`,
+          's.tiebreaks_won * 1.0 / s.tiebreaks_played DESC',
+          `CAST(s.tiebreaks_won AS VARCHAR) || ' / ' || CAST(s.tiebreaks_played AS VARCHAR)`, n);
+export const mpMostRetired = (n = 10) =>
+  mpBoard('s.retired', 's.retired > 0', 's.retired DESC', 'NULL', n);
+export const mpWonByRetirement = (n = 10) =>
+  mpBoard('s.wins_by_retirement', 's.wins_by_retirement > 0',
+          's.wins_by_retirement DESC', 'NULL', n);
+
+// --- match-length distribution (minutes-based → coverage carried) -----------
+const REAL_SURFACES = new Set(['Hard', 'Clay', 'Grass', 'Carpet']);
+export async function mpLengthBySurface(): Promise<MpSurfaceLength[]> {
+  const rows = await query<MpSurfaceLength>(
+    `SELECT m.surface AS surface,
+            COUNT(*) AS total,
+            COUNT(CASE WHEN mf.minutes_plausible THEN 1 END) AS with_minutes,
+            AVG(CASE WHEN mf.minutes_plausible THEN m.minutes END) AS avg_minutes
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+       JOIN mp_match_facts mf ON m.match_id = mf.match_id
+      WHERE m.won AND ms.is_completed
+      GROUP BY m.surface ORDER BY total DESC`);
+  return rows.filter((r) => REAL_SURFACES.has(r.surface));
+}
+
+// Distribution of completed-match durations in fixed-width minute buckets,
+// over plausible-minutes matches only.
+export function mpLengthHistogram(width = 30): Promise<MpLengthBucket[]> {
+  const w = Math.max(5, width | 0);
+  return query<MpLengthBucket>(
+    `SELECT CAST(FLOOR(m.minutes / ${w}) * ${w} AS INTEGER) AS bucket,
+            COUNT(*) AS n
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+       JOIN mp_match_facts mf ON m.match_id = mf.match_id
+      WHERE m.won AND ms.is_completed AND mf.minutes_plausible
+      GROUP BY bucket ORDER BY bucket`);
 }
 
 // Per-surface breakdown of one directed rivalry (their actual meetings).

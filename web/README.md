@@ -52,8 +52,27 @@ the scoreline. It reuses the shared design system (`styles.css` tokens, fonts,
 accent (the deciding-point crimson, never a surface colour), its own tagline
 ("Tennis, by the scoreline"), and cross-links to Rally (and Rally back to it).
 `vite.config.ts` declares both `index.html` and `matchpoint.html` as build
-inputs. This is the STEP 0 shell only — nav + placeholder hero; the leaderboards
-arrive once the score-parser gate (`match_scores.parquet`) is approved.
+inputs.
+
+Match Point's views (`src/mpviews.ts`, built from the `src/mpkit.ts` UI kit)
+read the verified `match_scores.parquet` joined to `matches.parquet` for context
+and the gated `mp_player_stats` / `mp_match_facts` aggregates — **no score is
+re-parsed in the browser**. `db.ts` gained additive table registrations and
+query functions only. The views:
+
+- **Blowouts** — most lopsided completed matches (fewest games conceded) +
+  most bagels / breadsticks dished (min 50 matches, shown).
+- **Marathons** — longest completed matches by plausible minutes + a
+  match-length distribution with per-surface minutes coverage shown (honesty
+  rule: minutes depend on recording).
+- **Tiebreaks** — most tiebreaks played (min 50 matches) + best tiebreak win
+  rate (min 100 tiebreaks, shown).
+- **Comebacks** — best-of-5 matches won from two sets down.
+- **Retirements** — its own slice (most retired; most wins by opponent
+  retirement), kept out of every completed-match board.
+
+Completed-match boards use the `is_completed` flag, so retirements/walkovers
+never leak in; player names cross-link to Rally player pages.
 
 ## Status
 

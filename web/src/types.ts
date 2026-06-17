@@ -90,6 +90,50 @@ export interface RivalryRow {
   meetings: number;
 }
 
+// --- Match Point ------------------------------------------------------------
+// A single match with its scoreline + context (match_scores ⋈ matches ⋈ facts).
+export interface MpMatch {
+  match_id: string;
+  winner_id: number; winner_name: string;
+  loser_id: number; loser_name: string;
+  set_scores: string;
+  tourney_name: string | null;
+  surface: string;
+  date: string;
+  round: string | null;
+  level_label: string | null;
+  best_of: number | null;
+  minutes: number | null;
+  games_won_winner: number | null;
+  games_won_loser: number | null;
+  sets_won_winner: number | null;
+  sets_won_loser: number | null;
+}
+
+// A per-player leaderboard row for Match Point boards (mp_player_stats).
+export interface MpPlayerRow {
+  player_id: number;
+  player_name: string;
+  ioc: string | null;
+  matches: number;
+  value: number;       // the ranked quantity
+  detail?: string;     // optional secondary readout (e.g. "505 / 839 won")
+}
+
+// Match-length by surface, carrying its own minutes coverage (honesty rule).
+export interface MpSurfaceLength {
+  surface: string;
+  total: number;
+  with_minutes: number;
+  avg_minutes: number | null;
+}
+
+// One bucket of the match-length distribution histogram.
+export interface MpLengthBucket {
+  bucket: number; // lower edge, minutes
+  n: number;
+}
+
 // One individual meeting between two players (from matches.parquet).
 export interface Meeting {
   date: string;

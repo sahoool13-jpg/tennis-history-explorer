@@ -6,20 +6,24 @@
 import './styles.css';
 import { route, setNotFound, startRouter } from './router';
 import { prefersReducedMotion, STAGGER_MS } from './motion';
+import {
+  renderBlowouts, renderMarathons, renderTiebreaks, renderComebacks,
+  renderRetirements,
+} from './mpviews';
+import { scoreline } from './mpkit';
 
 // Base path differs in dev ('/') vs the GitHub Pages build
 // ('/tennis-history-explorer/'); link to Rally's index relative to it.
 const RALLY_URL = `${import.meta.env.BASE_URL}`;
 
-// The planned views — declared here so the nav and the "what's coming" board
-// stay in sync. Order is the editorial running order, not a ranking. No view is
-// built yet; each routes to the same placeholder until the gate is approved.
+// The views — declared once so the nav and the home board stay in sync. Order
+// is the editorial running order, not a ranking.
 const SECTIONS = [
-  { slug: 'blowouts', label: 'Blowouts', blurb: 'Bagels, breadsticks and the most lopsided scorelines.' },
-  { slug: 'epics', label: 'Epics', blurb: 'The longest, the closest — matches that refused to end.' },
-  { slug: 'tiebreaks', label: 'Tiebreaks', blurb: 'Sets settled at the brink, and the players who lived there.' },
-  { slug: 'comebacks', label: 'Comebacks', blurb: 'Two sets down and back from the dead.' },
-  { slug: 'endings', label: 'Endings', blurb: 'Retirements, walkovers and matches left unfinished.' },
+  { slug: 'blowouts', label: 'Blowouts', blurb: 'The most lopsided scorelines, and the players who hand out shutouts.', render: renderBlowouts },
+  { slug: 'marathons', label: 'Marathons', blurb: 'The longest matches by playing time, and how match length is distributed.', render: renderMarathons },
+  { slug: 'tiebreaks', label: 'Tiebreaks', blurb: 'Who lives in the tiebreak, and who wins it.', render: renderTiebreaks },
+  { slug: 'comebacks', label: 'Comebacks', blurb: 'Best-of-five matches won from two sets down.', render: renderComebacks },
+  { slug: 'retirements', label: 'Retirements', blurb: 'Matches that ended early — kept out of the completed-match boards.', render: renderRetirements },
 ] as const;
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -45,20 +49,7 @@ app.innerHTML = `
 `;
 const content = document.querySelector<HTMLElement>('#content')!;
 
-// --- scoreline typesetting --------------------------------------------------
-// The signature device of the whole site: a set is games with the tiebreak
-// loser's points set as a superscript, exactly how a results page prints it.
-type SetCell = { w: number; l: number; tb?: number };
-
-function scoreline(sets: SetCell[]): string {
-  const cell = (s: SetCell) => {
-    const tb = s.tb !== undefined ? `<sup class="mp-tb">${s.tb}</sup>` : '';
-    return `<span class="mp-set"><b>${s.w}</b><i>${s.l}</i>${tb}</span>`;
-  };
-  return `<span class="mp-scoreline">${sets.map(cell).join('')}</span>`;
-}
-
-// --- placeholder home -------------------------------------------------------
+// --- home -------------------------------------------------------------------
 function renderHome(mount: HTMLElement): void {
   mount.replaceChildren();
   const wrap = document.createElement('div');
@@ -76,10 +67,7 @@ function renderHome(mount: HTMLElement): void {
       </p>
 
       <figure class="mp-figure">
-        ${scoreline([
-          { w: 6, l: 4 }, { w: 3, l: 6 }, { w: 6, l: 7, tb: 7 },
-          { w: 7, l: 6, tb: 3 }, { w: 70, l: 68 },
-        ])}
+        ${scoreline('6-4 3-6 6-7(7) 7-6(3) 70-68')}
         <figcaption class="mp-figure__cap">
           Isner d. Mahut · Wimbledon 2010 · 11 hours, 5 minutes — the longest
           match ever played.
@@ -97,30 +85,13 @@ function renderHome(mount: HTMLElement): void {
           </li>`).join('')}
       </ul>
       <p class="mp-note">
-        The structured score dataset is built and verified. The boards above
-        arrive next.
+        Built from the verified score dataset — completed matches, retirements
+        and walkovers each counted honestly, never mixed.
       </p>
     </section>
   `;
   mount.appendChild(wrap);
   revealRows(mount.querySelectorAll<HTMLElement>('.mp-board__row'));
-}
-
-// Placeholder for a not-yet-built section. Names the section and points home.
-function renderComingSoon(mount: HTMLElement, slug: string): void {
-  const sec = SECTIONS.find((s) => s.slug === slug);
-  mount.replaceChildren();
-  const el = document.createElement('div');
-  el.className = 'mp-soon';
-  el.innerHTML = `
-    <p class="eyebrow">Match Point</p>
-    <h1 class="mp-hero__title">${sec ? sec.label : 'Coming soon'}</h1>
-    <p class="mp-hero__lede">${sec ? sec.blurb : ''}
-      This board isn't built yet — the score dataset behind it is ready and
-      verified.</p>
-    <p class="mp-note"><a href="#/">Back to Match Point</a></p>
-  `;
-  mount.appendChild(el);
 }
 
 function revealRows(rows: NodeListOf<HTMLElement>): void {
@@ -136,7 +107,7 @@ function revealRows(rows: NodeListOf<HTMLElement>): void {
 // --- routes -----------------------------------------------------------------
 route(/^\/$/, () => renderHome(content));
 for (const s of SECTIONS) {
-  route(new RegExp(`^/${s.slug}$`), () => renderComingSoon(content, s.slug));
+  route(new RegExp(`^/${s.slug}$`), () => void s.render(content));
 }
 setNotFound(() => {
   content.innerHTML = `<p class="muted">Page not found. <a href="#/">Back to Match Point</a>.</p>`;
