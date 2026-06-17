@@ -46,6 +46,12 @@
   --maxw: 820px;
   --radius: 10px;
 
+  /* shared interaction language (mirrors motion.ts) */
+  --dur-fast: 140ms;
+  --dur-med: 300ms;
+  --ease-entrance: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
   font-family: var(--font-body);
   color: var(--ink);
   background: var(--paper);
@@ -261,6 +267,54 @@ a:hover { color: var(--accent); }
 .bar--minor .bar__track { opacity: 0.5; }
 .bar--minor .bar__cap { color: var(--ink-faint); }
 
+/* ----- rivalry timeline (the H2H hero) ----------------------------------- */
+.rivalry-timeline-wrap { margin-bottom: var(--s7); }
+.tl-legend { display: flex; justify-content: space-between; font-family: var(--font-head); font-weight: 600; font-size: var(--t-cap); }
+.timeline { position: relative; height: 180px; margin: var(--s3) 0 var(--s2); }
+.tl-axis { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--line); }
+.tl-ends { display: flex; justify-content: space-between; font-size: var(--t-cap); }
+
+.dot {
+  position: absolute;
+  width: 12px; height: 12px; padding: 0;
+  border: none; border-radius: 50%;
+  background: var(--c, var(--surface-Unknown));
+  cursor: pointer;
+  opacity: 0;
+  transform: translate(-50%, calc(-50% + 10px)) scale(0.4);
+  transition: opacity var(--dur-med) var(--ease-entrance),
+              transform var(--dur-med) var(--ease-entrance);
+}
+.dot.in { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.dot:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* Grand Slam meetings: larger + ringed */
+.dot--gs { width: 16px; height: 16px; box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--c); }
+/* hover/focus: focused dot grows and rises above; the rest dim */
+.timeline.focusing .dot.in:not(.is-focus) { opacity: 0.22; }
+.dot.is-focus { transform: translate(-50%, -50%) scale(1.75); z-index: 6;
+  transition: transform var(--dur-fast) var(--ease-standard), opacity var(--dur-fast); }
+
+/* editorial tooltip (shared) */
+.tooltip {
+  position: fixed; z-index: 50; left: 0; top: 0;
+  max-width: 260px; padding: 12px 14px;
+  background: var(--paper-raise); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 6px 20px -12px rgba(33, 29, 22, 0.4);
+  font-size: var(--t-cap); line-height: 1.45;
+  opacity: 0; transform: translateY(4px); pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-standard),
+              transform var(--dur-fast) var(--ease-standard);
+}
+.tooltip.is-visible { opacity: 1; transform: translateY(0); }
+.tt__head { display: flex; align-items: center; gap: var(--s2); font-family: var(--font-head); font-weight: 600; }
+.tt__swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.tt__tourn { font-family: var(--font-display); font-weight: 700; font-size: 1rem; margin: 4px 0 2px; }
+.tt__win { color: var(--ink); }
+.tt__win strong { font-weight: 700; }
+.tt__score { color: var(--ink-soft); margin-top: 2px; }
+.tt__date { margin-top: 4px; }
+
 /* ----- rivalry by surface (their actual meetings) ------------------------ */
 .rs-grid { display: flex; flex-direction: column; gap: var(--s5); }
 .rs-row { --c: var(--surface-Unknown); }
@@ -281,5 +335,10 @@ a:hover { color: var(--accent); }
   .player-header__stats { gap: var(--s5) var(--s6); }
   .h2h-score { gap: var(--s3); }
   .topbar { flex-direction: column; align-items: flex-start; gap: var(--s3); }
+  /* timeline: smaller dots + tighter bands, but above/below survives */
+  .timeline { height: 150px; }
+  .dot { width: 9px; height: 9px; }
+  .dot--gs { width: 13px; height: 13px; }
+  .tooltip { max-width: 220px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

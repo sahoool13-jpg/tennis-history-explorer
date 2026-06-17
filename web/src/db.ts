@@ -9,11 +9,12 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 
 import type {
   PlayerSearchRow, PlayerSummary, SurfaceSplit, CareerArcPoint, H2HRow,
-  H2HBySurfaceRow,
+  H2HBySurfaceRow, Meeting,
 } from './types';
 
 const TABLES = [
-  'surface_splits', 'player_summary', 'h2h', 'h2h_by_surface', 'rankings',
+  'surface_splits', 'player_summary', 'h2h', 'h2h_by_surface', 'matches',
+  'rankings',
 ] as const;
 
 let connPromise: Promise<duckdb.AsyncDuckDBConnection> | null = null;
@@ -134,6 +135,22 @@ export async function getH2H(
       WHERE player_id = ${intId(id1)} AND opp_id = ${intId(id2)}`,
   );
   return rows[0] ?? null;
+}
+
+// Every individual meeting between two players, oldest first — one row per
+// match (queried live from the player-long match fact). `won` is from id1's
+// perspective. Reconciles in count to the h2h aggregate for the pair.
+export function getMeetings(
+  id1: number | string,
+  id2: number | string,
+): Promise<Meeting[]> {
+  return query<Meeting>(
+    `SELECT CAST(tourney_date AS VARCHAR) AS date, tourney_name, surface,
+            tourney_level, level_label, round, score, won
+       FROM matches
+      WHERE player_id = ${intId(id1)} AND opp_id = ${intId(id2)}
+      ORDER BY tourney_date, match_id`,
+  );
 }
 
 // Per-surface breakdown of one directed rivalry (their actual meetings).

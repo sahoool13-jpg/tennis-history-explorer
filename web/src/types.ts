@@ -61,3 +61,15 @@ export interface H2HBySurfaceRow {
   player_wins: number;
   opp_wins: number;
 }
+
+// One individual meeting between two players (from matches.parquet).
+export interface Meeting {
+  date: string;
+  tourney_name: string | null;
+  surface: string;
+  tourney_level: string | null;
+  level_label: string | null;
+  round: string | null;
+  score: string | null;
+  won: boolean; // true => the first (queried) player won
+}

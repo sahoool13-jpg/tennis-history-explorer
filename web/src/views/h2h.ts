@@ -1,7 +1,8 @@
-import { getPlayerSummary, getSurfaceSplits, getH2H, getH2HBySurface } from '../db';
+import { getPlayerSummary, getSurfaceSplits, getH2H, getH2HBySurface, getMeetings } from '../db';
 import { searchBox, escapeHtml } from '../components/searchBox';
 import { surfaceCompare } from '../components/surfaceCompare';
 import { h2hSurfaceBreakdown } from '../components/h2hSurfaceBreakdown';
+import { rivalryTimeline } from '../components/rivalryTimeline';
 import { surfaceColor } from '../palette';
 import { navigate } from '../router';
 import type { H2HRow } from '../types';
@@ -78,10 +79,11 @@ export async function renderH2H(
   loading.textContent = 'Loading…';
   mount.appendChild(loading);
 
-  const [sumA, sumB, h2h, bySurface, splitsA, splitsB] = await Promise.all([
+  const [sumA, sumB, h2h, meetings, bySurface, splitsA, splitsB] = await Promise.all([
     getPlayerSummary(idA),
     getPlayerSummary(idB),
     getH2H(idA, idB),
+    getMeetings(idA, idB),
     getH2HBySurface(idA, idB),
     getSurfaceSplits(idA),
     getSurfaceSplits(idB),
@@ -115,6 +117,8 @@ export async function renderH2H(
     );
   } else {
     mount.appendChild(scoreboard(nameA, nameB, h2h, colorA, colorB));
+    // hero: the rivalry timeline, first thing after the scoreboard
+    mount.appendChild(rivalryTimeline(meetings, nameA, nameB, colorA, colorB));
     mount.appendChild(h2hSurfaceBreakdown(bySurface, nameA, nameB));
   }
 

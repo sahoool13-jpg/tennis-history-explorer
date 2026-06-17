@@ -18,6 +18,7 @@ const WANTED = new Set([
   'player_summary.parquet',
   'h2h.parquet',
   'h2h_by_surface.parquet',
+  'matches.parquet', // per-meeting fact, for the rivalry timeline
   'rankings.parquet',
   'surface_palette.json',
 ]);
