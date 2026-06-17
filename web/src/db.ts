@@ -185,10 +185,14 @@ export function lbWeeksNo1(n = 10): Promise<LeaderRow[]> {
 }
 export function lbSurface(surface: string, floor = 100, n = 8): Promise<LeaderRow[]> {
   if (!SURFACE_SET.has(surface)) return Promise.resolve([]);
+  // ioc lives in player_summary, not surface_splits — join for it.
   return query<LeaderRow>(
-    `SELECT player_id, player_name, ioc, win_pct AS value, matches
-       FROM surface_splits WHERE surface = '${surface}' AND matches >= ${floor | 0}
-      ORDER BY win_pct DESC LIMIT ${n | 0}`);
+    `SELECT s.player_id AS player_id, s.player_name AS player_name, p.ioc AS ioc,
+            s.win_pct AS value, s.matches AS matches
+       FROM surface_splits s
+       JOIN player_summary p ON s.player_id = p.player_id
+      WHERE s.surface = '${surface}' AND s.matches >= ${floor | 0}
+      ORDER BY s.win_pct DESC LIMIT ${n | 0}`);
 }
 export function lbRivalries(n = 10): Promise<RivalryRow[]> {
   return query<RivalryRow>(

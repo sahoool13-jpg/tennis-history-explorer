@@ -91,35 +91,68 @@ export async function renderRecords(mount: HTMLElement): Promise<void> {
   loading.textContent = 'Loading…';
   mount.appendChild(loading);
 
-  const [titles, wins, winpct, weeks, hard, clay, grass, rivalries] = await Promise.all([
-    lbTitles(10), lbWins(10), lbWinPct(200, 10), lbWeeksNo1(10),
-    lbSurface('Hard', 100, 8), lbSurface('Clay', 100, 8), lbSurface('Grass', 100, 8),
-    lbRivalries(10),
-  ]);
-  loading.remove();
-
   const pctFmt = (r: LeaderRow) => `${(r.value * 100).toFixed(1)}%`;
   const intFmt = (r: LeaderRow) => `${r.value}`;
 
+  type Spec = {
+    title: string; cap: string; p: Promise<LeaderRow[]>;
+    fmt: (r: LeaderRow) => string; accent?: string;
+  };
+  const specs: Spec[] = [
+    { title: 'Most titles', cap: '', p: lbTitles(10), fmt: intFmt },
+    { title: 'Most match wins', cap: '', p: lbWins(10), fmt: intFmt },
+    { title: 'Highest career win %', cap: 'Minimum 200 career matches.', p: lbWinPct(200, 10), fmt: pctFmt },
+    { title: 'Most weeks at No. 1', cap: '', p: lbWeeksNo1(10), fmt: intFmt },
+    { title: 'Best on hard', cap: 'Minimum 100 matches on hard.', p: lbSurface('Hard', 100, 8), fmt: pctFmt, accent: surfaceColor('Hard') },
+    { title: 'Best on clay', cap: 'Minimum 100 matches on clay.', p: lbSurface('Clay', 100, 8), fmt: pctFmt, accent: surfaceColor('Clay') },
+    { title: 'Best on grass', cap: 'Minimum 100 matches on grass.', p: lbSurface('Grass', 100, 8), fmt: pctFmt, accent: surfaceColor('Grass') },
+  ];
+
+  // settle independently so one bad board shows an error state, not a hung page
+  const settled = await Promise.allSettled(specs.map((s) => s.p));
+  const [riv] = await Promise.allSettled([lbRivalries(10)]);
+  loading.remove();
+
   const grid = document.createElement('div');
   grid.className = 'records-grid';
-  const cards = [
-    playerBoard('Most titles', '', titles, intFmt),
-    playerBoard('Most match wins', '', wins, intFmt),
-    playerBoard('Highest career win %', 'Minimum 200 career matches.', winpct, pctFmt),
-    playerBoard('Most weeks at No. 1', '', weeks, intFmt),
-    playerBoard('Best on hard', 'Minimum 100 matches on hard.', hard, pctFmt, surfaceColor('Hard')),
-    playerBoard('Best on clay', 'Minimum 100 matches on clay.', clay, pctFmt, surfaceColor('Clay')),
-    playerBoard('Best on grass', 'Minimum 100 matches on grass.', grass, pctFmt, surfaceColor('Grass')),
-  ];
-  cards.forEach((c) => grid.appendChild(c));
+  const built: HTMLElement[] = [];
+  settled.forEach((res, i) => {
+    const s = specs[i];
+    let card: HTMLElement;
+    if (res.status === 'fulfilled') {
+      card = playerBoard(s.title, s.cap, res.value, s.fmt, s.accent);
+    } else {
+      console.error(`Records: "${s.title}" failed —`, res.reason);
+      card = errorCard(s.title, s.cap, s.accent);
+    }
+    grid.appendChild(card);
+    built.push(card);
+  });
   mount.appendChild(grid);
 
   const rivWrap = document.createElement('div');
   rivWrap.className = 'records-grid records-grid--wide';
-  const riv = rivalryBoard('Biggest rivalries', 'By total tour-level meetings, 2000+.', rivalries);
-  rivWrap.appendChild(riv);
+  let rivCard: HTMLElement;
+  if (riv.status === 'fulfilled') {
+    rivCard = rivalryBoard('Biggest rivalries', 'By total tour-level meetings, 2000+.', riv.value);
+  } else {
+    console.error('Records: "Biggest rivalries" failed —', riv.reason);
+    rivCard = errorCard('Biggest rivalries', 'By total tour-level meetings, 2000+.');
+  }
+  rivWrap.appendChild(rivCard);
   mount.appendChild(rivWrap);
+  built.push(rivCard);
 
-  [...cards, riv].forEach(stagger);
+  built.forEach(stagger);
+}
+
+function errorCard(title: string, caption: string, accent?: string): HTMLElement {
+  const card = document.createElement('section');
+  card.className = 'panel lb-card';
+  if (accent) card.style.setProperty('--lb-accent', accent);
+  card.innerHTML =
+    `<div class="lb-head"><h2 class="lb-title">${escapeHtml(title)}</h2></div>` +
+    (caption ? `<p class="lb-cap faint">${escapeHtml(caption)}</p>` : '') +
+    `<p class="lb-error">Couldn't load this leaderboard. Try refreshing.</p>`;
+  return card;
 }

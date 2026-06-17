@@ -468,6 +468,7 @@ a:hover { color: var(--accent); }
 .lb-row--top .lb-rank { color: var(--lb-accent); }
 .lb-row--top .lb-val { font-size: 1.6rem; color: var(--lb-accent); }
 .lb-row--top .lb-name { font-size: 1.05rem; }
+.lb-error { margin: var(--s3) 0 0; font-size: var(--t-cap); color: var(--ink-soft); }
 
 @media (max-width: 560px) {
   .records-grid { grid-template-columns: 1fr; }
