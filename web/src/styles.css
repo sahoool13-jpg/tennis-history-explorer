@@ -435,6 +435,47 @@ a:hover { color: var(--accent); }
   .era-rise { opacity: 1; transform: none; }
 }
 
+/* ----- records / leaderboards -------------------------------------------- */
+.records-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: var(--s6); margin-bottom: var(--s6);
+}
+.records-grid--wide { grid-template-columns: 1fr; }
+.lb-card { --lb-accent: var(--ink); margin-bottom: 0; }
+.lb-head { display: flex; align-items: baseline; justify-content: space-between; }
+.lb-title { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em; }
+.lb-cap { margin: var(--s2) 0 var(--s3); font-size: var(--t-cap); }
+.lb-list { display: flex; flex-direction: column; }
+.lb-row {
+  display: grid; grid-template-columns: 1.6em 1fr auto; gap: var(--s3); align-items: baseline;
+  padding: var(--s3) var(--s2); border-top: 1px solid var(--line-soft);
+  color: var(--ink); border-radius: 6px;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--dur-med) var(--ease-entrance),
+              transform var(--dur-med) var(--ease-entrance),
+              background var(--dur-fast) var(--ease-standard);
+}
+.lb-row.in { opacity: 1; transform: none; }
+.lb-row:hover { background: color-mix(in srgb, var(--lb-accent) 12%, var(--paper)); color: var(--ink); }
+.lb-rank { font-family: var(--font-display); font-weight: 700; color: var(--ink-faint); }
+.lb-who { min-width: 0; }
+.lb-name { font-weight: 600; }
+.lb-ioc { color: var(--ink-faint); font-size: 0.85em; }
+.lb-vs { color: var(--ink-faint); font-weight: 500; font-style: italic; }
+.lb-sub { display: block; font-size: var(--t-cap); color: var(--ink-faint); }
+.lb-val { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; }
+.lb-row--top { border-top: none; }
+.lb-row--top .lb-rank { color: var(--lb-accent); }
+.lb-row--top .lb-val { font-size: 1.6rem; color: var(--lb-accent); }
+.lb-row--top .lb-name { font-size: 1.05rem; }
+
+@media (max-width: 560px) {
+  .records-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lb-row { opacity: 1; transform: none; }
+}
+
 /* ----- states ------------------------------------------------------------ */
 .loading { color: var(--ink-faint); font-size: 0.95rem; }
 

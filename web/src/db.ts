@@ -9,7 +9,7 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 
 import type {
   PlayerSearchRow, PlayerSummary, SurfaceSplit, CareerArcPoint, H2HRow,
-  H2HBySurfaceRow, Meeting, EraStat,
+  H2HBySurfaceRow, Meeting, EraStat, LeaderRow, RivalryRow,
 } from './types';
 
 const TABLES = [
@@ -156,6 +156,50 @@ export function getMeetings(
 // Tour-evolution aggregates, one row per year (2000+).
 export function getEraStats(): Promise<EraStat[]> {
   return query<EraStat>(`SELECT * FROM era_stats ORDER BY year`);
+}
+
+// --- leaderboards for the Records view (all from existing aggregates) -------
+const SURFACE_SET = new Set(['Hard', 'Clay', 'Grass', 'Carpet', 'Unknown']);
+
+export function lbTitles(n = 10): Promise<LeaderRow[]> {
+  return query<LeaderRow>(
+    `SELECT player_id, player_name, ioc, titles AS value, total_matches AS matches
+       FROM player_summary ORDER BY titles DESC, total_wins DESC LIMIT ${n | 0}`);
+}
+export function lbWins(n = 10): Promise<LeaderRow[]> {
+  return query<LeaderRow>(
+    `SELECT player_id, player_name, ioc, total_wins AS value, total_matches AS matches
+       FROM player_summary ORDER BY total_wins DESC LIMIT ${n | 0}`);
+}
+export function lbWinPct(floor = 200, n = 10): Promise<LeaderRow[]> {
+  return query<LeaderRow>(
+    `SELECT player_id, player_name, ioc, win_pct AS value, total_matches AS matches
+       FROM player_summary WHERE total_matches >= ${floor | 0}
+      ORDER BY win_pct DESC LIMIT ${n | 0}`);
+}
+export function lbWeeksNo1(n = 10): Promise<LeaderRow[]> {
+  return query<LeaderRow>(
+    `SELECT player_id, player_name, ioc, weeks_at_no1 AS value, total_matches AS matches
+       FROM player_summary WHERE weeks_at_no1 > 0
+      ORDER BY weeks_at_no1 DESC LIMIT ${n | 0}`);
+}
+export function lbSurface(surface: string, floor = 100, n = 8): Promise<LeaderRow[]> {
+  if (!SURFACE_SET.has(surface)) return Promise.resolve([]);
+  return query<LeaderRow>(
+    `SELECT player_id, player_name, ioc, win_pct AS value, matches
+       FROM surface_splits WHERE surface = '${surface}' AND matches >= ${floor | 0}
+      ORDER BY win_pct DESC LIMIT ${n | 0}`);
+}
+export function lbRivalries(n = 10): Promise<RivalryRow[]> {
+  return query<RivalryRow>(
+    `SELECT a.player_id AS a_id, a.player_name AS a_name, a.ioc AS a_ioc,
+            b.player_id AS b_id, b.player_name AS b_name, b.ioc AS b_ioc,
+            h.meetings AS meetings
+       FROM h2h h
+       JOIN player_summary a ON h.player_id = a.player_id
+       JOIN player_summary b ON h.opp_id = b.player_id
+      WHERE h.player_id < h.opp_id
+      ORDER BY h.meetings DESC LIMIT ${n | 0}`);
 }
 
 // Per-surface breakdown of one directed rivalry (their actual meetings).

@@ -6,6 +6,7 @@ import { renderSearch } from './views/search';
 import { renderPlayer } from './views/player';
 import { renderH2H } from './views/h2h';
 import { renderEras } from './views/eras';
+import { renderRecords } from './views/records';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
@@ -18,6 +19,7 @@ app.innerHTML = `
     <nav class="topnav">
       <a href="#/">Players</a>
       <a href="#/h2h">Head to head</a>
+      <a href="#/records">Records</a>
       <a href="#/eras">How the game changed</a>
     </nav>
   </header>
@@ -32,6 +34,7 @@ route(/^\/h2h\/(\d+)\/(\d+)$/, (p) => void renderH2H(content, p[0], p[1]));
 route(/^\/h2h\/(\d+)$/, (p) => void renderH2H(content, p[0]));
 route(/^\/h2h$/, () => void renderH2H(content));
 route(/^\/eras$/, () => void renderEras(content));
+route(/^\/records$/, () => void renderRecords(content));
 setNotFound(() => {
   content.innerHTML = `<p class="muted">Page not found. <a href="#/">Back to search</a>.</p>`;
 });

@@ -75,6 +75,21 @@ export interface EraStat {
   titles_by_top_player: number;
 }
 
+// Leaderboard rows for the Records view (all from existing aggregates).
+export interface LeaderRow {
+  player_id: number;
+  player_name: string;
+  ioc: string | null;
+  value: number;
+  matches: number;
+}
+
+export interface RivalryRow {
+  a_id: number; a_name: string; a_ioc: string | null;
+  b_id: number; b_name: string; b_ioc: string | null;
+  meetings: number;
+}
+
 // One individual meeting between two players (from matches.parquet).
 export interface Meeting {
   date: string;
