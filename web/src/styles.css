@@ -205,9 +205,25 @@ a:hover { color: var(--accent); }
 .bar__cap { margin-top: var(--s3); font-size: var(--t-cap); color: var(--ink-faint); }
 
 /* ----- career arc -------------------------------------------------------- */
-.career-arc figure { margin: 0; max-width: 100%; }
-.career-arc figure svg { overflow: visible; }
+.arc-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.arc-line { stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.arc-band { fill-opacity: 0.08; }
+.arc-grid { stroke: var(--line-soft); stroke-width: 1; }
+.arc-ylab, .arc-xlab { fill: var(--ink-faint); font-family: var(--font-body); font-size: 11px; }
+.arc-peak { stroke: var(--paper); stroke-width: 0.5; }
+.arc-guide { stroke: var(--ink-faint); stroke-width: 1; stroke-dasharray: 3 3;
+  transition: opacity var(--dur-fast) var(--ease-standard); }
+.arc-cursor { stroke: var(--paper); stroke-width: 2;
+  transition: opacity var(--dur-fast) var(--ease-standard); }
+.arc-overlay { cursor: crosshair; }
 .career-arc__cap { margin-top: var(--s3); font-size: var(--t-cap); color: var(--ink-faint); }
+
+@media (max-width: 560px) {
+  .arc-ylab, .arc-xlab { font-size: 14px; } /* counter the down-scale on small screens */
+}
+@media (prefers-reduced-motion: reduce) {
+  .arc-line { stroke-dashoffset: 0 !important; }
+}
 
 /* ----- buttons / actions ------------------------------------------------- */
 .btn {
