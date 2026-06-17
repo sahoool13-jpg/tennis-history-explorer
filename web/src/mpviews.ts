@@ -1,19 +1,19 @@
-// Match Point views — the score-led leaderboards. Each reads verified data via
-// db.ts (no re-parsing), opens with a one-line editorial takeaway, and reuses
-// the shared design language. Player names cross-link to Rally.
+// Match Point views — score-led, now explorable. Each section opens with a
+// one-line takeaway, then a filterable, paged board. Match boards (Blowouts,
+// Marathons, Comebacks) filter by search + surface + era and re-rank within the
+// filter; career player boards filter by player name. All integrity gates live
+// in the db.ts base queries — filters only narrow them.
 import {
-  mpLongestMatches, mpBiggestBlowouts, mpComebacks,
   mpBagelsDished, mpBreadsticksDished, mpTiebreaksPlayed, mpTiebreakRate,
   mpMostRetired, mpWonByRetirement, mpLengthBySurface, mpLengthHistogram,
 } from './db';
-import {
-  mpHeader, mpTakeaway, loadingLine, matchCard, playerBoard, errorCard,
-  fmtDuration, reveal,
-} from './mpkit';
+import { mpHeader, mpTakeaway, loadingLine, fmtDuration, errorCard } from './mpkit';
+import { matchExplorer, playerExplorer } from './mpexplore';
+import type { PlayerBoardSpec } from './mpexplore';
 import { surfaceColor } from './palette';
-import type { MpMatch, MpPlayerRow, MpLengthBucket, MpSurfaceLength } from './types';
+import type { MpPlayerRow, MpLengthBucket, MpSurfaceLength } from './types';
 
-// thresholds, declared once so the UI copy and the query stay in lockstep
+// floors, declared once so the UI copy and the query stay in lockstep
 const FLOOR_BAGEL = 50;
 const FLOOR_TB = 50;
 const FLOOR_TB_RATE = 100;
@@ -21,152 +21,122 @@ const FLOOR_TB_RATE = 100;
 const intFmt = (r: MpPlayerRow) => `${r.value}`;
 const pctFmt = (r: MpPlayerRow) => `${(r.value * 100).toFixed(1)}%`;
 
-function matchList(matches: MpMatch[], badge?: (m: MpMatch) => string): HTMLElement {
-  const list = document.createElement('div');
-  list.className = 'mp-matchlist';
-  matches.forEach((m, i) => {
-    list.appendChild(matchCard(m, { rank: i + 1, badge: badge ? badge(m) : undefined }));
-  });
-  return list;
-}
-
-async function withLoading(
-  mount: HTMLElement, title: string, standfirst: string,
-  build: () => Promise<HTMLElement[]>,
-): Promise<void> {
-  mount.replaceChildren();
-  mount.style.removeProperty('--accent');
-  mount.appendChild(mpHeader(title, standfirst));
-  const loading = loadingLine();
-  mount.appendChild(loading);
-  let nodes: HTMLElement[];
-  try {
-    nodes = await build();
-  } catch (err) {
-    console.error(`Match Point: "${title}" failed —`, err);
-    loading.remove();
-    mount.appendChild(errorCard(title));
-    return;
-  }
-  loading.remove();
-  nodes.forEach((n) => mount.appendChild(n));
+function subhead(eyebrow: string, title: string): HTMLElement {
+  const h = document.createElement('div');
+  h.className = 'mp-subhead';
+  h.innerHTML = `<p class="eyebrow">${eyebrow}</p><h2 class="lp-h2">${title}</h2>`;
+  return h;
 }
 
 // 1) BLOWOUTS -----------------------------------------------------------------
 export function renderBlowouts(mount: HTMLElement): Promise<void> {
-  return withLoading(mount, 'Blowouts',
+  mount.replaceChildren();
+  mount.style.removeProperty('--accent');
+  mount.appendChild(mpHeader('Blowouts',
     'The most lopsided matches on tour, and the players who hand out the '
-    + 'shutouts. Completed matches only — a retirement is never a blowout.',
-    async () => {
-      const [blow, bagels, bread] = await Promise.all([
-        mpBiggestBlowouts(12), mpBagelsDished(FLOOR_BAGEL, 10),
-        mpBreadsticksDished(FLOOR_BAGEL, 10),
-      ]);
-      const out: HTMLElement[] = [];
-      out.push(mpTakeaway('Fewest games dropped: a clean double bagel concedes nothing at all.'));
-      out.push(matchList(blow, (m) => `${m.games_won_loser} games dropped`));
-      const grid = document.createElement('div');
-      grid.className = 'records-grid';
-      grid.append(
-        playerBoard('Most bagels dished', `6–0 sets won · min ${FLOOR_BAGEL} matches`, bagels, intFmt),
-        playerBoard('Most breadsticks dished', `6–1 sets won · min ${FLOOR_BAGEL} matches`, bread, intFmt),
-      );
-      out.push(grid);
-      queueReveal(mount);
-      return out;
-    });
+    + 'shutouts. Completed matches only — a retirement is never a blowout. '
+    + 'Search, filter by surface or era, and the ranking follows.'));
+  mount.appendChild(mpTakeaway('Fewest games dropped: a clean double bagel concedes nothing at all.'));
+  mount.appendChild(matchExplorer({
+    board: 'blowouts',
+    badge: (m) => `${m.games_won_loser} games dropped`,
+  }));
+  mount.appendChild(subhead('Who dishes them out', 'Bagels & breadsticks'));
+  mount.appendChild(playerExplorer([
+    { title: 'Most bagels dished', caption: `6–0 sets won · min ${FLOOR_BAGEL} matches`,
+      fetch: (n, q) => mpBagelsDished(FLOOR_BAGEL, n, q), fmt: intFmt },
+    { title: 'Most breadsticks dished', caption: `6–1 sets won · min ${FLOOR_BAGEL} matches`,
+      fetch: (n, q) => mpBreadsticksDished(FLOOR_BAGEL, n, q), fmt: intFmt },
+  ]));
+  return Promise.resolve();
 }
 
 // 2) MARATHONS ----------------------------------------------------------------
 export function renderMarathons(mount: HTMLElement): Promise<void> {
-  return withLoading(mount, 'Marathons',
-    'The longest matches by playing time, and how match length is distributed. '
-    + 'These are minutes-based: duration depends on times being recorded, and '
-    + 'coverage is shown throughout. Implausible durations (the raw data has a '
-    + 'few) are filtered out.',
-    async () => {
-      const [longest, bySurface, hist] = await Promise.all([
-        mpLongestMatches(12), mpLengthBySurface(), mpLengthHistogram(30),
-      ]);
-      const out: HTMLElement[] = [];
-      out.push(mpTakeaway('The five-set marathons live at the top — and they are almost all on the slow stuff or the grass.'));
-      out.push(matchList(longest, (m) => fmtDuration(m.minutes)));
-      out.push(lengthDistribution(hist, bySurface));
-      queueReveal(mount);
-      return out;
-    });
+  mount.replaceChildren();
+  mount.style.removeProperty('--accent');
+  mount.appendChild(mpHeader('Marathons',
+    'The longest matches by playing time. Minutes-based: duration depends on '
+    + 'times being recorded, and implausible durations are filtered out — so '
+    + 'a filtered list is still "longest recorded, plausible only." '
+    + 'Search or filter by surface or era; the list re-ranks by minutes.'));
+  mount.appendChild(mpTakeaway('The five-set marathons live at the top — almost all on the slow stuff or the grass.'));
+  mount.appendChild(matchExplorer({
+    board: 'marathons',
+    badge: (m) => fmtDuration(m.minutes),
+    emptyHint: 'No timed matches found for that filter — try widening it.',
+  }));
+
+  // global match-length distribution (overview, not part of the filtered list)
+  mount.appendChild(subhead('Overview', 'How long matches run'));
+  const distHost = document.createElement('div');
+  distHost.appendChild(loadingLine());
+  mount.appendChild(distHost);
+  void (async () => {
+    try {
+      const [bySurface, hist] = await Promise.all([mpLengthBySurface(), mpLengthHistogram(30)]);
+      distHost.replaceChildren(lengthDistribution(hist, bySurface));
+    } catch (err) {
+      console.error('Match Point: length distribution failed —', err);
+      distHost.replaceChildren(errorCard('How long matches run'));
+    }
+  })();
+  return Promise.resolve();
 }
 
 // 3) TIEBREAKS ----------------------------------------------------------------
 export function renderTiebreaks(mount: HTMLElement): Promise<void> {
-  return withLoading(mount, 'Tiebreaks',
-    'Who lives in the tiebreak, and who wins it. Win rate applies a minimum so a '
-    + 'few good breakers can\'t top a career of them.',
-    async () => {
-      const [played, rate] = await Promise.all([
-        mpTiebreaksPlayed(FLOOR_TB, 10), mpTiebreakRate(FLOOR_TB_RATE, 10),
-      ]);
-      const out: HTMLElement[] = [];
-      out.push(mpTakeaway('The biggest servers play the most tiebreaks — but the best win rates belong to the all-court greats.'));
-      const grid = document.createElement('div');
-      grid.className = 'records-grid';
-      grid.append(
-        playerBoard('Most tiebreaks played', `Set tiebreaks · min ${FLOOR_TB} matches`, played, intFmt),
-        playerBoard('Best tiebreak win rate', `min ${FLOOR_TB_RATE} tiebreaks played`, rate, pctFmt),
-      );
-      out.push(grid);
-      queueReveal(mount);
-      return out;
-    });
+  mount.replaceChildren();
+  mount.style.removeProperty('--accent');
+  mount.appendChild(mpHeader('Tiebreaks',
+    'Who lives in the tiebreak, and who wins it. Win rate applies a minimum so '
+    + 'a few good breakers can’t top a career of them. Search by player to find '
+    + 'anyone; the boards re-rank within your search.'));
+  mount.appendChild(mpTakeaway('The biggest servers play the most tiebreaks — but the best win rates belong to the all-court greats.'));
+  mount.appendChild(playerExplorer([
+    { title: 'Most tiebreaks played', caption: `Set tiebreaks · min ${FLOOR_TB} matches`,
+      fetch: (n, q) => mpTiebreaksPlayed(FLOOR_TB, n, q), fmt: intFmt },
+    { title: 'Best tiebreak win rate', caption: `min ${FLOOR_TB_RATE} tiebreaks played`,
+      fetch: (n, q) => mpTiebreakRate(FLOOR_TB_RATE, n, q), fmt: pctFmt },
+  ]));
+  return Promise.resolve();
 }
 
 // 4) COMEBACKS ----------------------------------------------------------------
 export function renderComebacks(mount: HTMLElement): Promise<void> {
-  return withLoading(mount, 'Comebacks',
-    'Best-of-five matches won after losing the first two sets — tennis\'s deepest '
-    + 'holes, climbed out of. Completed matches only.',
-    async () => {
-      const matches = await mpComebacks(16);
-      const out: HTMLElement[] = [];
-      out.push(mpTakeaway('Two sets to love down, and still won in five. Most recent first.'));
-      out.push(matchList(matches));
-      queueReveal(mount);
-      return out;
-    });
+  mount.replaceChildren();
+  mount.style.removeProperty('--accent');
+  mount.appendChild(mpHeader('Comebacks',
+    'Best-of-five matches won after losing the first two sets — tennis’s '
+    + 'deepest holes, climbed out of. Completed matches only. Search a player '
+    + 'or tournament, or filter by surface or era.'));
+  mount.appendChild(mpTakeaway('Two sets to love down, and still won in five. Most recent first.'));
+  mount.appendChild(matchExplorer({
+    board: 'comebacks',
+    emptyHint: 'No comebacks found for that filter — try widening it.',
+  }));
+  return Promise.resolve();
 }
 
 // 5) RETIREMENTS --------------------------------------------------------------
 export function renderRetirements(mount: HTMLElement): Promise<void> {
-  return withLoading(mount, 'Retirements',
+  mount.replaceChildren();
+  mount.style.removeProperty('--accent');
+  mount.appendChild(mpHeader('Retirements',
     'A separate slice, kept out of every completed-match board. When a match '
     + 'ends early, the player who stops is the loser of record — these boards '
-    + 'count those endings, not how anyone played.',
-    async () => {
-      const [retired, byRet] = await Promise.all([
-        mpMostRetired(10), mpWonByRetirement(10),
-      ]);
-      const out: HTMLElement[] = [];
-      out.push(mpTakeaway('Retirements are match outcomes, not scorelines — they sit on their own.'));
-      const grid = document.createElement('div');
-      grid.className = 'records-grid';
-      grid.append(
-        playerBoard('Most retirements', 'Matches the player retired from', retired, intFmt),
-        playerBoard('Most wins by opponent retirement', 'Matches won when the opponent retired', byRet, intFmt),
-      );
-      out.push(grid);
-      queueReveal(mount);
-      return out;
-    });
+    + 'count those endings, not how anyone played. Search by player.'));
+  mount.appendChild(mpTakeaway('Retirements are match outcomes, not scorelines — they sit on their own.'));
+  mount.appendChild(playerExplorer([
+    { title: 'Most retirements', caption: 'Matches the player retired from',
+      fetch: (n, q) => mpMostRetired(n, q), fmt: intFmt },
+    { title: 'Most wins by opponent retirement', caption: 'Matches won when the opponent retired',
+      fetch: (n, q) => mpWonByRetirement(n, q), fmt: intFmt },
+  ] as PlayerBoardSpec[]));
+  return Promise.resolve();
 }
 
-// reveal once the mount has its children appended
-function queueReveal(mount: HTMLElement): void {
-  requestAnimationFrame(() => {
-    reveal(mount.querySelectorAll<HTMLElement>('.mp-match, .lb-row, .mp-rise'));
-  });
-}
-
-// --- match-length distribution: histogram + per-surface coverage ------------
+// --- global match-length distribution: histogram + per-surface coverage -----
 function lengthDistribution(
   hist: MpLengthBucket[], bySurface: MpSurfaceLength[],
 ): HTMLElement {
@@ -177,14 +147,12 @@ function lengthDistribution(
   const cov = totalAll > 0 ? Math.round((100 * withMin) / totalAll) : 0;
 
   wrap.innerHTML = `
-    <div class="lb-head"><h2 class="lb-title">How long matches run</h2></div>
-    <p class="lb-cap faint">Completed matches with a plausible recorded time.
-      Times recorded for ${cov}% of completed matches — duration data depends on
-      recording, so read these as a sample, not a census.</p>`;
+    <p class="lb-cap faint">All completed matches with a plausible recorded time
+      (the full data, not your filter above). Times recorded for ${cov}% of
+      completed matches — duration data depends on recording, so read these as a
+      sample, not a census.</p>`;
   wrap.appendChild(histogramSvg(hist));
 
-  // per-surface average with its own coverage, so no surface looks authoritative
-  // on thin data
   const rows = document.createElement('div');
   rows.className = 'mp-surf-cov';
   bySurface.forEach((s) => {
@@ -192,7 +160,7 @@ function lengthDistribution(
     const scov = s.total > 0 ? Math.round((100 * s.with_minutes) / s.total) : 0;
     const avg = s.avg_minutes != null ? fmtDuration(Math.round(s.avg_minutes)) : '—';
     const row = document.createElement('div');
-    row.className = 'mp-surf-cov__row mp-rise';
+    row.className = 'mp-surf-cov__row mp-rise in';
     row.innerHTML = `
       <span class="mp-surf-cov__name"><span class="mp-dot" style="--c:${c}"></span>${s.surface}</span>
       <span class="mp-surf-cov__avg tnum">${avg}<small> avg</small></span>
@@ -224,11 +192,10 @@ function histogramSvg(hist: MpLengthBucket[]): SVGSVGElement {
   for (const b of hist) {
     const bx = x(b.bucket), bw = Math.max(1, x(b.bucket + width) - bx - 1.5);
     const by = y(b.n), bh = H - mb - by;
-    bars += `<rect class="mp-bar mp-rise" x="${bx.toFixed(1)}" y="${by.toFixed(1)}" `
+    bars += `<rect class="mp-bar in" x="${bx.toFixed(1)}" y="${by.toFixed(1)}" `
       + `width="${bw.toFixed(1)}" height="${Math.max(0, bh).toFixed(1)}" `
       + `rx="1.5" fill="${accent}"></rect>`;
   }
-  // hour gridlines/labels
   let ticks = '';
   for (let t = Math.ceil(minB / 60) * 60; t <= maxB; t += 60) {
     const tx = x(t);

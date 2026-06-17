@@ -681,6 +681,56 @@ a:hover { color: var(--accent); }
   .mp-bar { opacity: 0.85; }
 }
 
+/* ----- explorable boards: filter bar, chips, paging ---------------------- */
+.mp-explore { margin-bottom: var(--s8); }
+.mp-filterbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4);
+  margin-bottom: var(--s6);
+}
+.mp-filter__search { flex: 1 1 220px; max-width: 340px; }
+.mp-chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.mp-chip {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-family: var(--font-head); font-weight: 600; font-size: 0.85rem;
+  padding: 6px 12px; border: 1px solid var(--line); border-radius: 100px;
+  background: var(--paper-raise); color: var(--ink-soft);
+  transition: border-color var(--dur-fast) var(--ease-standard),
+              background var(--dur-fast) var(--ease-standard),
+              color var(--dur-fast) var(--ease-standard);
+}
+.mp-chip:hover { border-color: var(--c, var(--ink)); color: var(--ink); }
+.mp-chip.is-on {
+  background: color-mix(in srgb, var(--c, var(--ink)) 16%, var(--paper));
+  border-color: var(--c, var(--ink)); color: var(--ink);
+}
+.mp-chip--era { --c: var(--mp-accent); }
+.mp-filter__reset {
+  background: none; border: none; cursor: pointer; padding: 6px 4px;
+  font-family: var(--font-head); font-weight: 600; font-size: 0.85rem;
+  color: var(--ink-faint); text-decoration: underline; text-underline-offset: 3px;
+}
+.mp-filter__reset:hover { color: var(--mp-accent); }
+.mp-filter__reset[hidden] { display: none; }
+
+.mp-result-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s4);
+  margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--line-soft);
+}
+.mp-result-count { font-size: var(--t-cap); }
+.mp-more { padding: 8px 16px; font-size: 0.85rem; }
+.mp-empty { padding: var(--s6) 0; color: var(--ink-soft); font-size: 1.02rem; }
+
+.mp-subhead { margin: var(--s8) 0 var(--s4); }
+.mp-subhead .lp-h2 { font-size: var(--t-h2); margin: 0; }
+.mp-board-slot { min-width: 0; }
+
+@media (max-width: 560px) {
+  .mp-filterbar { gap: var(--s3); }
+  .mp-filter__search { flex-basis: 100%; max-width: none; }
+  .mp-result-foot { flex-direction: column; align-items: stretch; gap: var(--s3); }
+  .mp-more { width: 100%; }
+}
+
 /* ============================================================================
    Family landing — the front door (root route of the Rally SPA). A daily
    almanac: On This Day + the daily puzzle, then doors into both siblings.

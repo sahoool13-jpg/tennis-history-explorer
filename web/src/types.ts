@@ -149,6 +149,19 @@ export interface PuzzlePlayer {
   last_year: number | null;
 }
 
+// Filter state shared by the explorable Match Point boards. All clauses AND
+// together; an empty/blank field means "no constraint".
+export interface MpFilter {
+  q?: string;            // free text: player OR tournament name (substring, ci)
+  surfaces?: string[];   // subset of Hard/Clay/Grass/Carpet ([] = all)
+  era?: string | null;   // decade start as string: '2000' | '2010' | '2020'
+}
+
+// A page of match rows for an explorable board, with the full matching count.
+export interface MpMatchPage { rows: MpMatch[]; total: number; }
+// A page of player rows for an explorable career board.
+export interface MpPlayerPage { rows: MpPlayerRow[]; total: number; }
+
 // One individual meeting between two players (from matches.parquet).
 export interface Meeting {
   date: string;

@@ -11,6 +11,7 @@ import type {
   PlayerSearchRow, PlayerSummary, SurfaceSplit, CareerArcPoint, H2HRow,
   H2HBySurfaceRow, Meeting, EraStat, LeaderRow, RivalryRow,
   MpMatch, MpPlayerRow, MpSurfaceLength, MpLengthBucket, PuzzlePlayer,
+  MpFilter, MpMatchPage, MpPlayerPage,
 } from './types';
 
 const TABLES = [
@@ -226,77 +227,123 @@ const MP_MATCH_COLS = `
   ms.games_won_winner AS games_won_winner, ms.games_won_loser AS games_won_loser,
   ms.sets_won_winner AS sets_won_winner, ms.sets_won_loser AS sets_won_loser`;
 
-// Longest completed matches by minutes. Minutes-based → only matches whose
-// minutes pass the gated plausibility flag (the raw column has data errors);
-// retirements are excluded via is_completed.
-export function mpLongestMatches(n = 12): Promise<MpMatch[]> {
-  return query<MpMatch>(
-    `SELECT ${MP_MATCH_COLS}
-       FROM matches m
-       JOIN match_scores ms ON m.match_id = ms.match_id
-       JOIN mp_match_facts mf ON m.match_id = mf.match_id
-      WHERE m.won AND ms.is_completed AND mf.minutes_plausible
-      ORDER BY m.minutes DESC LIMIT ${n | 0}`);
+// --- explorable match boards: filtered live over the full match-level data --
+// Each board's base predicate carries its integrity gate (is_completed for the
+// completed-match boards; minutes_plausible for marathons; is_comeback for
+// comebacks). The user filter only ADDS AND-clauses, so search/surface/era can
+// never become a backdoor around those gates.
+export type MpBoard = 'blowouts' | 'marathons' | 'comebacks';
+
+const BOARD_SQL: Record<MpBoard, { joins: string; where: string; order: string }> = {
+  blowouts: {
+    joins: '',
+    where: 'm.won AND ms.is_completed',
+    order: 'ms.games_won_loser ASC, ms.sets_won_winner DESC, '
+         + 'ms.games_won_winner ASC, m.tourney_date DESC, m.match_id',
+  },
+  marathons: {
+    joins: 'JOIN mp_match_facts mf ON m.match_id = mf.match_id',
+    where: 'm.won AND ms.is_completed AND mf.minutes_plausible',
+    order: 'm.minutes DESC, m.match_id',
+  },
+  comebacks: {
+    // is_comeback already implies a completed best-of-5 (see the gate).
+    joins: 'JOIN mp_match_facts mf ON m.match_id = mf.match_id',
+    where: 'm.won AND mf.is_comeback',
+    order: 'm.tourney_date DESC, m.match_id',
+  },
+};
+
+function likeClause(col: string, term: string): string {
+  return `lower(${col}) LIKE '%${esc(term)}%'`;
 }
 
-// Most lopsided completed matches: fewest games conceded by the winner, then
-// most sets won (so a best-of-5 triple bagel outranks a double bagel).
-export function mpBiggestBlowouts(n = 12): Promise<MpMatch[]> {
-  return query<MpMatch>(
-    `SELECT ${MP_MATCH_COLS}
-       FROM matches m
-       JOIN match_scores ms ON m.match_id = ms.match_id
-      WHERE m.won AND ms.is_completed
-      ORDER BY ms.games_won_loser ASC, ms.sets_won_winner DESC,
-               ms.games_won_winner ASC LIMIT ${n | 0}`);
+// AND-clauses for the user filter (never relaxes the board's base gate).
+function filterClauses(f: MpFilter): string {
+  const out: string[] = [];
+  const q = (f.q ?? '').trim().toLowerCase();
+  if (q) {
+    out.push(`(${likeClause('m.player_name', q)} OR ${likeClause('m.opp_name', q)} `
+      + `OR ${likeClause('m.tourney_name', q)})`);
+  }
+  const surfs = (f.surfaces ?? []).filter((s) => REAL_SURFACES.has(s));
+  if (surfs.length) {
+    out.push(`m.surface IN (${surfs.map((s) => `'${esc(s)}'`).join(', ')})`);
+  }
+  if (f.era) {
+    const start = Math.trunc(Number(f.era));
+    if (Number.isFinite(start) && start > 0) {
+      out.push(`EXTRACT(year FROM m.tourney_date) BETWEEN ${start} AND ${start + 9}`);
+    }
+  }
+  return out.length ? ' AND ' + out.join(' AND ') : '';
 }
 
-// Best-of-5 matches won from two sets down (gated is_comeback flag), recent first.
-export function mpComebacks(n = 14): Promise<MpMatch[]> {
-  return query<MpMatch>(
-    `SELECT ${MP_MATCH_COLS}
-       FROM matches m
-       JOIN match_scores ms ON m.match_id = ms.match_id
-       JOIN mp_match_facts mf ON m.match_id = mf.match_id
-      WHERE m.won AND mf.is_comeback
-      ORDER BY m.tourney_date DESC, m.match_id LIMIT ${n | 0}`);
+// Returns the top `limit` rows for a board under the filter, plus the full
+// matching count (for "showing top N of M").
+export async function mpMatchBoard(
+  board: MpBoard, filter: MpFilter, limit: number,
+): Promise<MpMatchPage> {
+  const b = BOARD_SQL[board];
+  const from = `FROM matches m JOIN match_scores ms ON m.match_id = ms.match_id ${b.joins}`;
+  const where = `${b.where}${filterClauses(filter)}`;
+  const lim = Math.max(1, Math.min(200, limit | 0));
+  const [rows, counted] = await Promise.all([
+    query<MpMatch>(`SELECT ${MP_MATCH_COLS} ${from} WHERE ${where} `
+      + `ORDER BY ${b.order} LIMIT ${lim}`),
+    query<{ total: number }>(`SELECT COUNT(*) AS total ${from} WHERE ${where}`),
+  ]);
+  return { rows, total: Number(counted[0]?.total ?? 0) };
 }
 
 // --- per-player Match Point boards (mp_player_stats, ioc joined for display) -
-function mpBoard(
+// Career totals come straight from the gated aggregate (values unchanged). A
+// player-name search narrows + re-ranks within the board; surface/era don't
+// apply to career totals, so these boards take name only. Returns a page + the
+// full matching count.
+async function mpBoard(
   valueExpr: string, whereExpr: string, orderExpr: string,
-  detailExpr = 'NULL', n = 10,
-): Promise<MpPlayerRow[]> {
-  return query<MpPlayerRow>(
-    `SELECT s.player_id AS player_id, s.player_name AS player_name,
-            p.ioc AS ioc, s.matches AS matches,
-            ${valueExpr} AS value, ${detailExpr} AS detail
-       FROM mp_player_stats s
-       LEFT JOIN player_summary p ON s.player_id = p.player_id
-      WHERE ${whereExpr}
-      ORDER BY ${orderExpr} LIMIT ${n | 0}`);
+  detailExpr: string, limit: number, nameQ?: string,
+): Promise<MpPlayerPage> {
+  let where = whereExpr;
+  const q = (nameQ ?? '').trim().toLowerCase();
+  if (q) where += ` AND lower(s.player_name) LIKE '%${esc(q)}%'`;
+  const lim = Math.max(1, Math.min(200, limit | 0));
+  const [rows, counted] = await Promise.all([
+    query<MpPlayerRow>(
+      `SELECT s.player_id AS player_id, s.player_name AS player_name,
+              p.ioc AS ioc, s.matches AS matches,
+              ${valueExpr} AS value, ${detailExpr} AS detail
+         FROM mp_player_stats s
+         LEFT JOIN player_summary p ON s.player_id = p.player_id
+        WHERE ${where}
+        ORDER BY ${orderExpr} LIMIT ${lim}`),
+    query<{ total: number }>(
+      `SELECT COUNT(*) AS total FROM mp_player_stats s WHERE ${where}`),
+  ]);
+  return { rows, total: Number(counted[0]?.total ?? 0) };
 }
 
-export const mpBagelsDished = (floor = 50, n = 10) =>
+export const mpBagelsDished = (floor = 50, n = 15, q?: string) =>
   mpBoard('s.bagels_dished', `s.matches >= ${floor | 0} AND s.bagels_dished > 0`,
-          's.bagels_dished DESC, s.matches ASC', 'NULL', n);
-export const mpBreadsticksDished = (floor = 50, n = 10) =>
+          's.bagels_dished DESC, s.matches ASC', 'NULL', n, q);
+export const mpBreadsticksDished = (floor = 50, n = 15, q?: string) =>
   mpBoard('s.breadsticks_dished', `s.matches >= ${floor | 0} AND s.breadsticks_dished > 0`,
-          's.breadsticks_dished DESC, s.matches ASC', 'NULL', n);
-export const mpTiebreaksPlayed = (floor = 50, n = 10) =>
+          's.breadsticks_dished DESC, s.matches ASC', 'NULL', n, q);
+export const mpTiebreaksPlayed = (floor = 50, n = 15, q?: string) =>
   mpBoard('s.tiebreaks_played', `s.matches >= ${floor | 0} AND s.tiebreaks_played > 0`,
           's.tiebreaks_played DESC',
-          `CAST(s.tiebreaks_won AS VARCHAR) || ' won'`, n);
-export const mpTiebreakRate = (floor = 100, n = 10) =>
+          `CAST(s.tiebreaks_won AS VARCHAR) || ' won'`, n, q);
+export const mpTiebreakRate = (floor = 100, n = 15, q?: string) =>
   mpBoard('s.tiebreaks_won * 1.0 / s.tiebreaks_played',
           `s.tiebreaks_played >= ${floor | 0}`,
           's.tiebreaks_won * 1.0 / s.tiebreaks_played DESC',
-          `CAST(s.tiebreaks_won AS VARCHAR) || ' / ' || CAST(s.tiebreaks_played AS VARCHAR)`, n);
-export const mpMostRetired = (n = 10) =>
-  mpBoard('s.retired', 's.retired > 0', 's.retired DESC', 'NULL', n);
-export const mpWonByRetirement = (n = 10) =>
+          `CAST(s.tiebreaks_won AS VARCHAR) || ' / ' || CAST(s.tiebreaks_played AS VARCHAR)`, n, q);
+export const mpMostRetired = (n = 15, q?: string) =>
+  mpBoard('s.retired', 's.retired > 0', 's.retired DESC, s.matches DESC', 'NULL', n, q);
+export const mpWonByRetirement = (n = 15, q?: string) =>
   mpBoard('s.wins_by_retirement', 's.wins_by_retirement > 0',
-          's.wins_by_retirement DESC', 'NULL', n);
+          's.wins_by_retirement DESC, s.matches DESC', 'NULL', n, q);
 
 // --- match-length distribution (minutes-based → coverage carried) -----------
 const REAL_SURFACES = new Set(['Hard', 'Clay', 'Grass', 'Carpet']);
