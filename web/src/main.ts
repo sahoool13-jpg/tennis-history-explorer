@@ -8,9 +8,14 @@ import { renderH2H } from './views/h2h';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
-  <header class="topbar"><a class="topbar__brand" href="#/">Tennis History Explorer</a></header>
+  <header class="topbar">
+    <a class="brand" href="#/" aria-label="Tennis History Explorer — home">
+      <span class="brand__word">Tennis History Explorer</span>
+      <span class="brand__mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    </a>
+  </header>
   <main id="content" class="content"></main>
-  <footer class="sitefoot muted">Data: Jeff Sackmann (ATP) · CC BY-NC-SA 4.0</footer>
+  <footer class="sitefoot">Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0</footer>
 `;
 const content = document.querySelector<HTMLElement>('#content')!;
 

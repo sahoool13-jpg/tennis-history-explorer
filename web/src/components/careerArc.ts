@@ -1,26 +1,20 @@
 import * as Plot from '@observablehq/plot';
 import type { CareerArcPoint } from '../types';
 
-// Career arc: rank over time, axis inverted (1 at top). Every week spent at the
-// career-high rank is marked (all spells, not just the first). Live-sliced from
-// rankings.parquet upstream.
+// Career arc: rank over time, axis inverted (1 at top). A thin confident ink
+// line, peak weeks marked as small dots in the player's identity colour. No
+// chart-junk gridlines — editorial, not Excel.
 export function careerArc(
   points: CareerArcPoint[],
   careerHighRank: number | null,
+  accent: string,
 ): HTMLElement {
   const root = document.createElement('section');
-  root.className = 'career-arc';
-
-  const h = document.createElement('h2');
-  h.className = 'career-arc__title';
-  h.textContent = 'Career arc';
-  root.appendChild(h);
+  root.className = 'panel career-arc';
+  root.innerHTML = `<p class="eyebrow">Career arc</p>`;
 
   if (points.length === 0) {
-    const empty = document.createElement('p');
-    empty.className = 'muted';
-    empty.textContent = 'No ranking history on record.';
-    root.appendChild(empty);
+    root.insertAdjacentHTML('beforeend', `<p class="muted">No ranking history on record.</p>`);
     return root;
   }
 
@@ -30,39 +24,45 @@ export function careerArc(
 
   const chart = Plot.plot({
     width: 820,
-    height: 340,
-    marginLeft: 52,
-    marginBottom: 34,
-    style: { fontSize: '12px', background: 'transparent' },
-    x: { type: 'utc', label: null, grid: false },
-    y: { reverse: true, label: '↑ Rank', grid: true, nice: true },
+    height: 320,
+    marginLeft: 44,
+    marginRight: 16,
+    marginBottom: 30,
+    style: {
+      background: 'transparent',
+      color: '#6f6453',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      fontSize: '12px',
+    },
+    x: { type: 'utc', label: null, ticks: 6, tickSize: 0 },
+    y: {
+      reverse: true,
+      label: null,
+      ticks: 5,
+      tickSize: 0,
+      grid: false,
+    },
     marks: [
-      Plot.ruleY([1], { stroke: '#e6e6e6' }),
+      // a single faint baseline at #1 instead of a full grid
+      Plot.ruleY([1], { stroke: '#e3d9c4', strokeWidth: 1 }),
       Plot.lineY(data, {
         x: 'date',
         y: 'rank',
-        stroke: 'var(--ink)',
-        strokeWidth: 1.5,
+        stroke: '#211d16',
+        strokeWidth: 1.4,
         curve: 'step-after',
       }),
-      Plot.dot(peaks, {
-        x: 'date',
-        y: 'rank',
-        r: 2.5,
-        fill: 'var(--accent)',
-        stroke: 'white',
-        strokeWidth: 0.5,
-      }),
+      Plot.dot(peaks, { x: 'date', y: 'rank', r: 2.6, fill: accent, stroke: 'none' }),
     ],
   });
 
-  const caption = document.createElement('p');
-  caption.className = 'career-arc__caption muted';
-  caption.textContent =
+  const cap = document.createElement('p');
+  cap.className = 'career-arc__cap';
+  cap.textContent =
     careerHighRank == null
       ? ''
-      : `Marked points: every week at career-high rank #${careerHighRank}.`;
+      : `Coloured dots mark every week at the career-high rank, #${careerHighRank}.`;
 
-  root.append(chart, caption);
+  root.append(chart, cap);
   return root;
 }
