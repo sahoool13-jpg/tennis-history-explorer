@@ -90,6 +90,7 @@ a:hover { color: var(--accent); }
 .topnav { display: flex; gap: var(--s5); font-family: var(--font-head); font-weight: 600; font-size: 0.92rem; }
 .topnav a { color: var(--ink-soft); border-bottom: 2px solid transparent; padding-bottom: 2px; }
 .topnav a:hover { color: var(--ink); border-color: var(--accent); }
+.topnav__sib { color: var(--ink-faint); font-weight: 700; }
 .brand__word {
   font-family: var(--font-display);
   font-weight: 800;
@@ -492,3 +493,112 @@ a:hover { color: var(--accent); }
   .tooltip { max-width: 220px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ============================================================================
+   Match Point — sibling site (matchpoint.html / matchpoint.ts)
+   Same family as Rally: same paper, ink, fonts, motion tokens. The difference
+   is the subject. Rally's brand IS the surface palette; Match Point's brand is
+   the SCORELINE, so its identity is monochrome editorial with one decisive
+   accent — the colour of the match-deciding point — never a surface colour.
+   All selectors are namespaced .mp-* so nothing leaks into Rally.
+   ========================================================================== */
+:root {
+  /* the decisive point — deep, dramatic, distinct from any surface hue */
+  --mp-accent: #b2324a;
+  --mp-accent-soft: color-mix(in srgb, var(--mp-accent) 12%, var(--paper));
+}
+
+/* ----- wordmark + scoreboard mark (sibling to Rally's tri-bar) ------------ */
+.mp-word {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 1.55rem; line-height: 1; letter-spacing: -0.03em; color: var(--ink);
+}
+.mp-word > span { display: inline; }
+.mp-word__pt { color: var(--mp-accent); margin-left: 0.16em; }
+
+/* mini scoreboard: set digits in cells, the deciding point picked out */
+.mp-mark {
+  display: inline-flex; align-items: stretch; gap: 2px; height: 14px;
+  font-family: var(--font-head); font-weight: 700; font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+.mp-mark i, .mp-mark b {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 11px; padding: 0 2px; border-radius: 2px;
+  background: var(--line-soft); color: var(--ink-soft); font-style: normal;
+}
+.mp-mark b { background: transparent; min-width: 3px; }
+.mp-mark__pt { background: var(--mp-accent); color: var(--paper); }
+
+.mp-topnav a:hover { color: var(--ink); border-color: var(--mp-accent); }
+.mp-crosslink, .mp-foot-link { color: var(--ink-soft); }
+.mp-crosslink { font-weight: 700; }
+.mp-topnav .mp-crosslink:hover, .mp-foot-link:hover { color: var(--mp-accent); }
+.mp-foot-link { border-bottom: 1px solid var(--line); padding-bottom: 1px; }
+
+/* ----- scoreline: the signature device ----------------------------------- */
+.mp-scoreline {
+  display: inline-flex; flex-wrap: wrap; gap: 0.5em 0.7em;
+  font-family: var(--font-display); font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; line-height: 1;
+}
+.mp-set { display: inline-flex; align-items: flex-start; }
+.mp-set > b { font-weight: 800; color: var(--ink); }
+.mp-set > i {
+  font-style: normal; font-weight: 800; color: var(--ink-faint);
+  margin-left: 0.12em;
+}
+.mp-set > b::after { content: '\2013'; color: var(--ink-faint); font-weight: 500; margin: 0 0.04em; }
+.mp-tb { font-size: 0.42em; font-weight: 700; color: var(--mp-accent); margin-left: 0.06em; }
+
+/* ----- home / hero -------------------------------------------------------- */
+.mp-home { padding-top: var(--s5); }
+.mp-hero { margin-bottom: var(--s9); }
+.mp-hero__title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: var(--t-mega); line-height: 0.92; letter-spacing: -0.04em;
+  margin: 0 0 var(--s5);
+}
+.mp-hero__title em { font-style: italic; color: var(--mp-accent); }
+.mp-hero__lede { font-size: 1.12rem; color: var(--ink-soft); max-width: 50ch; margin: 0 0 var(--s7); }
+.mp-hero__lede a { border-bottom: 1px solid var(--mp-accent); padding-bottom: 1px; }
+.mp-hero__lede a:hover { color: var(--mp-accent); }
+
+.mp-figure {
+  margin: 0; padding: var(--s6) 0 0; border-top: 1px solid var(--line);
+}
+.mp-figure .mp-scoreline { font-size: clamp(2rem, 8vw, 3.6rem); }
+.mp-figure__cap { margin: var(--s4) 0 0; font-size: var(--t-cap); color: var(--ink-faint); max-width: 54ch; }
+
+/* ----- "what's coming" board (the planned running order) ----------------- */
+.mp-coming { border-top: 1px solid var(--line); padding-top: var(--s6); }
+.mp-board { list-style: none; margin: 0; padding: 0; }
+.mp-board__row {
+  display: grid; grid-template-columns: minmax(7.5em, 9em) 1fr; gap: var(--s4);
+  align-items: baseline; padding: var(--s4) 0; border-top: 1px solid var(--line-soft);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity var(--dur-med) var(--ease-entrance),
+              transform var(--dur-med) var(--ease-entrance);
+}
+.mp-board__row:first-child { border-top: none; }
+.mp-board__row.in { opacity: 1; transform: none; }
+.mp-board__label {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.4rem;
+  letter-spacing: -0.02em; color: var(--ink);
+  border-bottom: 2px solid transparent;
+}
+.mp-board__label:hover { color: var(--mp-accent); border-color: var(--mp-accent); }
+.mp-board__blurb { color: var(--ink-soft); font-size: 0.98rem; }
+.mp-note { margin: var(--s6) 0 0; font-size: var(--t-cap); color: var(--ink-faint); }
+.mp-note a { border-bottom: 1px solid var(--mp-accent); padding-bottom: 1px; }
+
+/* ----- coming-soon section page ------------------------------------------ */
+.mp-soon { padding-top: var(--s6); }
+.mp-soon .mp-hero__title { font-size: var(--t-h1); margin-bottom: var(--s4); }
+
+@media (max-width: 560px) {
+  .mp-board__row { grid-template-columns: 1fr; gap: var(--s1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mp-board__row { opacity: 1; transform: none; }
+}

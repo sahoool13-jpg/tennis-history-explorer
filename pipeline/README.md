@@ -76,3 +76,40 @@ dataset has no such column.
 The Phase 2 gate cross-checks internal consistency (surface/h2h sums ==
 summary totals), referential integrity against `players.parquet`, the Fed–Nadal
 anchor in both directions, and smell tests (Nadal clay > .90, Federer peak == No.1).
+
+# Phase 2.6 data — structured scores (Match Point)
+
+`parse_scores.py` reads `matches.parquet` and turns the free-text `score` string
+into structured per-match data, written to **`match_scores.parquet`** (one row
+per match, keyed by `match_id`). It is the load-bearing artifact for the **Match
+Point** site (matches read by their scoreline).
+
+```bash
+python pipeline/parse_scores.py
+```
+
+Per match it extracts: `sets_won_winner`/`sets_won_loser`,
+`games_won_winner`/`games_won_loser` (total across sets), `num_tiebreaks`,
+`num_match_tiebreaks`, `bagels_winner`/`bagels_loser` (6–0 sets won/lost),
+`breadsticks_winner`/`breadsticks_loser` (6–1), per-set detail as JSON
+(`sets_detail`: games, tiebreak flag, tiebreak loser points, match-tiebreak
+flag) plus a compact `set_scores` string, and status flags `is_retirement`,
+`is_walkover`, `is_default`, `is_incomplete`, `is_completed`, `is_unparseable`.
+
+Handling rules:
+- The raw score is winner-first per set (`winner_games-loser_games`).
+- Status outcomes (RET / W/O / DEF / "played and abandoned/unfinished") are
+  **flagged, never forced into a games count**. A walkover with no games keeps
+  null counts; a retirement keeps the real partial games actually played.
+- A deciding match/super-tiebreak (bracketed, e.g. `[10-8]`) is credited to the
+  match winner — the brackets are not reliably winner-first in the source.
+- A score we cannot parse, or a clean-status score where the winner did not win
+  more sets, is flagged `is_unparseable` with null numeric fields — **never
+  guessed or silently zeroed**.
+
+Gate (must pass before writing): parse coverage (total / completed / flagged /
+unparseable, with the unparseable %), known-match spot checks (2008 RG final
+straight sets + bagel, Isner–Mahut tiebreaks & 92–91 games, a retirement), an
+internal-consistency assertion that **every completed match has winner
+sets_won > loser sets_won** (violations printed), and a row reconciliation to
+79,299 unique `match_id`s.
