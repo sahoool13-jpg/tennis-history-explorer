@@ -10,9 +10,10 @@ import { renderEras } from './views/eras';
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <header class="topbar">
-    <a class="brand" href="#/" aria-label="Tennis History Explorer — home">
-      <span class="brand__word">Tennis History Explorer</span>
+    <a class="brand" href="#/" aria-label="Rally — home">
+      <span class="brand__word">Rally</span>
       <span class="brand__mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="brand__tag">Tennis history, by surface</span>
     </a>
     <nav class="topnav">
       <a href="#/">Players</a>

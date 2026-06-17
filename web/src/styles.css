@@ -1,5 +1,5 @@
 /* ============================================================================
-   Tennis History Explorer — design system (Phase 3.5 polish)
+   Rally — design system (Phase 3.5 polish)
    Light editorial, color-forward. Surface palette (clay/grass/hard) is the
    brand. Tokens live here; views consume them. Surface hexes arrive from
    surface_palette.json via --surface-* (set in palette.ts) — fallbacks below
@@ -93,10 +93,16 @@ a:hover { color: var(--accent); }
 .brand__word {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 1.18rem;
-  letter-spacing: -0.01em;
+  font-size: 1.6rem;
+  letter-spacing: -0.02em;
   line-height: 1;
   color: var(--ink);
+}
+.brand__tag {
+  font-family: var(--font-body);
+  font-size: var(--t-cap);
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
 }
 /* tri-colour surface mark — the three brand surfaces, in order */
 .brand__mark { display: flex; height: 5px; width: 116px; border-radius: 3px; overflow: hidden; }
