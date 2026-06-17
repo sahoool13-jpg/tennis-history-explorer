@@ -10,7 +10,7 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 import type {
   PlayerSearchRow, PlayerSummary, SurfaceSplit, CareerArcPoint, H2HRow,
   H2HBySurfaceRow, Meeting, EraStat, LeaderRow, RivalryRow,
-  MpMatch, MpPlayerRow, MpSurfaceLength, MpLengthBucket,
+  MpMatch, MpPlayerRow, MpSurfaceLength, MpLengthBucket, PuzzlePlayer,
 } from './types';
 
 const TABLES = [
@@ -326,6 +326,40 @@ export function mpLengthHistogram(width = 30): Promise<MpLengthBucket[]> {
        JOIN mp_match_facts mf ON m.match_id = mf.match_id
       WHERE m.won AND ms.is_completed AND mf.minutes_plausible
       GROUP BY bucket ORDER BY bucket`);
+}
+
+// --- family landing: "On this day" + daily puzzle --------------------------
+// Matches whose tourney_date falls on any of the given month-day keys
+// (month*100 + day), across all years (2000+). Curated server-side: finals
+// first, then tournament prestige, then round depth, then most recent.
+export function matchesOnDates(mmdds: number[], limit = 8): Promise<MpMatch[]> {
+  const set = Array.from(new Set(mmdds.filter((n) => Number.isFinite(n)).map((n) => n | 0)));
+  if (set.length === 0) return Promise.resolve([]);
+  return query<MpMatch>(
+    `SELECT ${MP_MATCH_COLS}
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+      WHERE m.won
+        AND (EXTRACT(month FROM m.tourney_date) * 100
+             + EXTRACT(day FROM m.tourney_date)) IN (${set.join(',')})
+      ORDER BY (m.round = 'F') DESC,
+        CASE m.tourney_level WHEN 'G' THEN 4 WHEN 'M' THEN 3 WHEN 'F' THEN 2
+                             WHEN 'O' THEN 2 WHEN 'A' THEN 1 ELSE 0 END DESC,
+        m.round_order DESC, m.tourney_date DESC, m.match_id
+      LIMIT ${limit | 0}`);
+}
+
+// The daily-puzzle candidate pool: notable, guessable players. Floor stated in
+// the UI. Ordered by player_id so the deterministic daily pick is stable.
+export function puzzlePool(): Promise<PuzzlePlayer[]> {
+  return query<PuzzlePlayer>(
+    `SELECT player_id, player_name, ioc, hand,
+            career_high_rank, titles, total_matches, win_pct, primary_surface,
+            CAST(EXTRACT(year FROM first_match_date) AS INTEGER) AS debut_year,
+            CAST(EXTRACT(year FROM last_match_date)  AS INTEGER) AS last_year
+       FROM player_summary
+      WHERE career_high_rank <= 30 AND total_matches >= 300
+      ORDER BY player_id`);
 }
 
 // Per-surface breakdown of one directed rivalry (their actual meetings).

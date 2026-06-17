@@ -75,16 +75,19 @@ export interface MatchCardOpts {
   rank?: number;
   // extra stat shown at the right of the meta line, e.g. "4h 25m"
   badge?: string;
+  // show just the year in the meta line instead of the full date (almanac use)
+  yearOnly?: boolean;
 }
 
 export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
   const el = document.createElement('article');
-  el.className = 'mp-match';
+  el.className = 'mp-match' + (opts.rank === undefined ? ' mp-match--norank' : '');
   const c = surfaceColor(m.surface);
   const rank = opts.rank !== undefined
     ? `<span class="mp-match__rank tnum">${opts.rank}</span>` : '';
   const badge = opts.badge
     ? `<span class="mp-match__badge tnum">${escapeHtml(opts.badge)}</span>` : '';
+  const when = opts.yearOnly ? (m.date || '').slice(0, 4) : fmtDate(m.date);
   const where = [m.tourney_name, m.round && roundLabel(m.round)]
     .filter(Boolean).map((s) => escapeHtml(String(s))).join(' · ');
   el.innerHTML = `
@@ -99,8 +102,8 @@ export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
       <p class="mp-match__meta">
         <span class="mp-dot" style="--c:${c}"></span>${escapeHtml(m.surface)}
         <span class="mp-sep">·</span>${where}
-        <span class="mp-sep">·</span>${fmtDate(m.date)}
-        ${badge ? `<span class="mp-sep">·</span>${badge}` : ''}
+        <span class="mp-sep">·</span>${escapeHtml(when)}
+        ${badge}
       </p>
     </div>`;
   return el;

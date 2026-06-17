@@ -74,6 +74,23 @@ query functions only. The views:
 Completed-match boards use the `is_completed` flag, so retirements/walkovers
 never leak in; player names cross-link to Rally player pages.
 
+## Family landing (root route)
+
+The root route `/` of the main SPA is the family front door (`src/views/landing.ts`),
+a daily almanac with its own masthead (the `landing-mode` body class hides the
+Rally chrome). Rally's player search moved to `/players`. Two living features,
+both reading only verified data:
+
+- **On this day** — `matchesOnDates()` finds matches whose `tourney_date` falls
+  on today's month-day across all years, curated finals-first then by tournament
+  prestige and recency, rendered with the Match Point scoreline card. If the
+  exact day is thin (&lt; 4 matches) it widens to ±3 days ("this week").
+- **Daily puzzle** — `src/landing/puzzle.ts`, a deterministic "guess the player"
+  (Wordle-style). The mystery is `pool[fnv1a(YYYY-MM-DD) % pool.length]` from a
+  149-player pool (`puzzlePool()`: peak top-30 and 300+ matches), so everyone
+  gets the same player each day and it changes at local midnight. State is
+  in-memory; the shareable grid encodes the result (no localStorage).
+
 ## Status
 
 Functional pass: correct data, correct architecture, three views rendering real

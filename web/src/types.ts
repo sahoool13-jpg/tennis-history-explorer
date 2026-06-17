@@ -134,6 +134,21 @@ export interface MpLengthBucket {
   n: number;
 }
 
+// A candidate for the daily "guess the player" puzzle (notable, guessable).
+export interface PuzzlePlayer {
+  player_id: number;
+  player_name: string;
+  ioc: string | null;
+  hand: string | null;
+  career_high_rank: number | null;
+  titles: number;
+  total_matches: number;
+  win_pct: number;
+  primary_surface: string | null;
+  debut_year: number | null;
+  last_year: number | null;
+}
+
 // One individual meeting between two players (from matches.parquet).
 export interface Meeting {
   date: string;

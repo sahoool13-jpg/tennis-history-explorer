@@ -626,6 +626,7 @@ a:hover { color: var(--accent); }
               transform var(--dur-med) var(--ease-entrance);
 }
 .mp-match.in { opacity: 1; transform: none; }
+.mp-match--norank { grid-template-columns: 1fr; }
 .mp-match:first-child { border-top: none; }
 .mp-match__rank {
   font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
@@ -678,4 +679,111 @@ a:hover { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) {
   .mp-bar, .mp-surf-cov__row { opacity: 1; transform: none; }
   .mp-bar { opacity: 0.85; }
+}
+
+/* ============================================================================
+   Family landing — the front door (root route of the Rally SPA). A daily
+   almanac: On This Day + the daily puzzle, then doors into both siblings.
+   `landing-mode` hides the Rally chrome so the page carries its own masthead.
+   ========================================================================== */
+:root { --pz-hit: #5b8c4f; --pz-near: #cf9a3c; }
+body.landing-mode .topbar,
+body.landing-mode .sitefoot { display: none; }
+
+/* ----- family masthead --------------------------------------------------- */
+.lp-masthead { padding: var(--s4) 0 var(--s6); border-bottom: 1px solid var(--line); margin-bottom: var(--s7); }
+.lp-family { display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap; }
+.lp-fam { display: inline-flex; flex-direction: column; gap: 5px; }
+.lp-fam .brand__word, .lp-fam .mp-word { font-size: 1.7rem; }
+.lp-fam__amp { font-family: var(--font-display); font-weight: 500; font-size: 1.4rem; color: var(--ink-faint); }
+.lp-family__tag { margin: var(--s4) 0 0; color: var(--ink-soft); font-size: 1rem; max-width: 52ch; }
+.lp-family__tag strong { color: var(--ink); font-weight: 600; }
+
+/* ----- hero: On This Day ------------------------------------------------- */
+.lp-hero { margin-bottom: var(--s8); }
+.lp-hero__title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: var(--t-mega); line-height: 0.95; letter-spacing: -0.04em;
+  margin: 0 0 var(--s4);
+}
+.lp-hero__lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 52ch; margin: 0 0 var(--s6); }
+.lp-otd__note { margin: 0 0 var(--s4); font-size: var(--t-cap); }
+
+/* ----- daily puzzle ------------------------------------------------------ */
+.lp-puzzle { margin-bottom: var(--s8); }
+.lp-h2 { font-family: var(--font-display); font-weight: 800; font-size: var(--t-h1); letter-spacing: -0.03em; margin: 0 0 var(--s3); }
+.lp-puzzle__sub { color: var(--ink-soft); max-width: 56ch; margin: 0 0 var(--s5); font-size: 0.98rem; }
+
+.pz-board { display: flex; flex-direction: column; gap: var(--s2); margin-bottom: var(--s5); }
+.pz-row { display: grid; grid-template-columns: 9.5em 1fr; gap: var(--s3); align-items: center; }
+.pz-row__who { font-family: var(--font-head); font-weight: 700; font-size: 0.95rem; overflow-wrap: break-word; }
+.pz-row__cells { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.pz-cell {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px; padding: 6px 2px; border-radius: 6px; min-height: 44px;
+  background: var(--line-soft); text-align: center;
+}
+.pz-cell__k { font-family: var(--font-head); font-size: 0.56rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); }
+.pz-cell__v { font-family: var(--font-display); font-weight: 700; font-size: 0.92rem; line-height: 1; color: var(--ink); }
+.pz-arr { font-style: normal; font-size: 0.8em; margin-left: 1px; }
+.pz-cell--hit { background: color-mix(in srgb, var(--pz-hit) 22%, var(--paper)); }
+.pz-cell--hit .pz-cell__v { color: color-mix(in srgb, var(--pz-hit) 70%, var(--ink)); }
+.pz-cell--near { background: color-mix(in srgb, var(--pz-near) 24%, var(--paper)); }
+.pz-cell--near .pz-cell__v { color: color-mix(in srgb, var(--pz-near) 65%, var(--ink)); }
+.pz-cell--miss { background: var(--line); }
+.pz-cell--miss .pz-cell__v { color: var(--ink-soft); }
+.pz-cell--blank { background: var(--paper-raise); border: 1px dashed var(--line); }
+.pz-cell--blank .pz-cell__v { color: var(--ink-faint); }
+.pz-cell--empty { background: var(--paper-raise); min-height: 44px; }
+.pz-row--empty .pz-row__who { min-height: 1px; }
+
+.pz-form { margin-bottom: var(--s4); }
+.pz-label { display: block; font-family: var(--font-head); font-size: var(--t-eyebrow); font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); margin-bottom: var(--s2); }
+.pz-search { max-width: 360px; }
+.pz-results { max-height: 280px; }
+
+.pz-end { margin-top: var(--s4); }
+.pz-verdict { font-family: var(--font-display); font-weight: 800; font-size: var(--t-h2); letter-spacing: -0.02em; margin: 0 0 var(--s2); }
+.pz-reveal { margin: 0 0 var(--s4); font-size: 1rem; }
+.pz-reveal a { font-family: var(--font-head); font-weight: 700; border-bottom: 1px solid var(--mp-accent); }
+.pz-reveal a:hover { color: var(--mp-accent); }
+.pz-surf { display: flex; flex-wrap: wrap; gap: var(--s3); margin-bottom: var(--s5); }
+.pz-surf__chip { display: inline-flex; align-items: center; gap: var(--s2); font-size: var(--t-cap); color: var(--ink-soft); }
+.pz-surf__chip b { font-family: var(--font-display); color: var(--ink); }
+.pz-share-note { margin: var(--s3) 0 0; font-size: var(--t-cap); }
+
+/* ----- doors ------------------------------------------------------------- */
+.lp-doors { margin-bottom: var(--s8); }
+.lp-doorgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s4); }
+.lp-door {
+  --door: var(--ink);
+  position: relative; display: grid; gap: var(--s2);
+  padding: var(--s5) var(--s5) var(--s7); border: 1px solid var(--line);
+  border-radius: var(--radius); background: var(--paper-raise);
+  transition: transform var(--dur-fast) var(--ease-standard),
+              border-color var(--dur-fast) var(--ease-standard);
+}
+.lp-door::before { content: ''; position: absolute; left: 0; top: var(--s5); bottom: var(--s5); width: 3px; border-radius: 3px; background: var(--door); }
+.lp-door:hover { transform: translateY(-3px); border-color: var(--door); color: var(--ink); }
+.lp-door__eyebrow { font-family: var(--font-head); font-size: var(--t-eyebrow); font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--door); }
+.lp-door__title { font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; }
+.lp-door__blurb { color: var(--ink-soft); font-size: 0.92rem; }
+.lp-door__go { position: absolute; right: var(--s5); bottom: var(--s4); font-family: var(--font-display); color: var(--door); opacity: 0; transform: translateX(-4px); transition: opacity var(--dur-fast), transform var(--dur-fast) var(--ease-standard); }
+.lp-door:hover .lp-door__go { opacity: 1; transform: none; }
+.lp-door--rally { --door: var(--surface-Hard); }
+.lp-door--mp { --door: var(--mp-accent); }
+.lp-door--rec { --door: var(--surface-Clay); }
+.lp-door--era { --door: var(--surface-Grass); }
+
+.lp-foot { border-top: 1px solid var(--line); }
+
+@media (max-width: 560px) {
+  .pz-row { grid-template-columns: 1fr; gap: var(--s1); }
+  .pz-row__who { font-size: 0.9rem; }
+  .pz-cell { min-height: 40px; }
+  .pz-cell__v { font-size: 0.82rem; }
+  .lp-family { gap: var(--s3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-door, .lp-door__go { transition: none; }
 }
