@@ -21,6 +21,7 @@ app.innerHTML = `
       <a href="#/h2h">Head to head</a>
       <a href="#/records">Records</a>
       <a href="#/eras">How the game changed</a>
+      <a class="topnav__sib" href="${import.meta.env.BASE_URL}matchpoint.html">Match Point&#8201;&#8599;</a>
     </nav>
   </header>
   <main id="content" class="content"></main>

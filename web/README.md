@@ -43,6 +43,18 @@ source of truth stays in `data/built` and is never duplicated into git
 - The build emits both DuckDB bundles (mvp + eh ~73 MB of wasm); `selectBundle`
   picks one at runtime based on browser features.
 
+## Match Point (companion site)
+
+A second front door in the same app: **Match Point** (`matchpoint.html` →
+`src/matchpoint.ts`), the matches-focused companion to Rally — tennis read by
+the scoreline. It reuses the shared design system (`styles.css` tokens, fonts,
+`motion.ts`) so it is clearly the same family, but has its own wordmark, its own
+accent (the deciding-point crimson, never a surface colour), its own tagline
+("Tennis, by the scoreline"), and cross-links to Rally (and Rally back to it).
+`vite.config.ts` declares both `index.html` and `matchpoint.html` as build
+inputs. This is the STEP 0 shell only — nav + placeholder hero; the leaderboards
+arrive once the score-parser gate (`match_scores.parquet`) is approved.
+
 ## Status
 
 Functional pass: correct data, correct architecture, three views rendering real
