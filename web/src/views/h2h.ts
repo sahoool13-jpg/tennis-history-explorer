@@ -1,6 +1,8 @@
-import { getPlayerSummary, getSurfaceSplits, getH2H } from '../db';
+import { getPlayerSummary, getSurfaceSplits, getH2H, getH2HBySurface } from '../db';
 import { searchBox, escapeHtml } from '../components/searchBox';
 import { surfaceCompare } from '../components/surfaceCompare';
+import { h2hSurfaceBreakdown } from '../components/h2hSurfaceBreakdown';
+import { surfaceColor } from '../palette';
 import { navigate } from '../router';
 import type { H2HRow } from '../types';
 
@@ -19,28 +21,32 @@ function picker(idA?: string, idB?: string): HTMLElement {
   return wrap;
 }
 
-function scoreboard(nameA: string, nameB: string, h: H2HRow): HTMLElement {
+function scoreboard(
+  nameA: string, nameB: string, h: H2HRow, colorA: string, colorB: string,
+): HTMLElement {
   const el = document.createElement('section');
-  el.className = 'panel';
+  el.className = 'panel h2h-scoreboard';
+  el.style.setProperty('--pa', colorA);
+  el.style.setProperty('--pb', colorB);
   const total = Math.max(h.meetings, 1);
   const aw = (h.player_wins / total) * 100;
   const bw = (h.opp_wins / total) * 100;
   el.innerHTML = `
     <div class="h2h-score">
       <div class="h2h-score__side">
-        <div class="h2h-score__name">${escapeHtml(nameA)}</div>
-        <div class="h2h-score__num tnum">${h.player_wins}</div>
+        <div class="h2h-score__name" style="color:var(--pa)">${escapeHtml(nameA)}</div>
+        <div class="h2h-score__num tnum" style="color:var(--pa)">${h.player_wins}</div>
       </div>
       <div class="h2h-score__dash">–</div>
       <div class="h2h-score__side h2h-score__side--right">
-        <div class="h2h-score__name">${escapeHtml(nameB)}</div>
-        <div class="h2h-score__num tnum">${h.opp_wins}</div>
+        <div class="h2h-score__name" style="color:var(--pb)">${escapeHtml(nameB)}</div>
+        <div class="h2h-score__num tnum" style="color:var(--pb)">${h.opp_wins}</div>
       </div>
     </div>
     <div class="winshare" role="img"
          aria-label="${escapeHtml(nameA)} ${h.player_wins}, ${escapeHtml(nameB)} ${h.opp_wins}">
-      <div class="winshare__a" style="width:${aw.toFixed(2)}%"></div>
-      <div class="winshare__b" style="width:${bw.toFixed(2)}%"></div>
+      <div class="winshare__a" style="width:${aw.toFixed(2)}%;background:var(--pa)"></div>
+      <div class="winshare__b" style="width:${bw.toFixed(2)}%;background:var(--pb)"></div>
     </div>
     <p class="h2h-meta tnum">${h.meetings} meetings · last met ${fmtDate(h.last_meeting_date)}</p>
   `;
@@ -56,7 +62,8 @@ export async function renderH2H(
   const title = document.createElement('h1');
   title.className = 'h2h__title';
   title.textContent = 'Head to head';
-  mount.append(title, picker(idA, idB));
+  const pick = picker(idA, idB);
+  mount.append(title, pick);
 
   if (!idA || !idB) {
     mount.insertAdjacentHTML(
@@ -71,10 +78,11 @@ export async function renderH2H(
   loading.textContent = 'Loading…';
   mount.appendChild(loading);
 
-  const [sumA, sumB, h2h, splitsA, splitsB] = await Promise.all([
+  const [sumA, sumB, h2h, bySurface, splitsA, splitsB] = await Promise.all([
     getPlayerSummary(idA),
     getPlayerSummary(idB),
     getH2H(idA, idB),
+    getH2HBySurface(idA, idB),
     getSurfaceSplits(idA),
     getSurfaceSplits(idB),
   ]);
@@ -88,13 +96,26 @@ export async function renderH2H(
   const nameA = sumA.player_name;
   const nameB = sumB.player_name;
 
+  // Item 2: reflect the loaded players as the current (editable) selection.
+  const inputs = pick.querySelectorAll<HTMLInputElement>('input');
+  if (inputs[0]) inputs[0].value = nameA;
+  if (inputs[1]) inputs[1].value = nameB;
+
+  // Item 1: colour each player by their primary surface. If both share a
+  // primary surface (identical colour), keep player A on the surface colour and
+  // drop player B to ink so the two are never indistinguishable.
+  const colorA = surfaceColor(sumA.primary_surface ?? 'Unknown');
+  const samePrimary = (sumA.primary_surface ?? 'Unknown') === (sumB.primary_surface ?? 'Unknown');
+  const colorB = samePrimary ? 'var(--ink)' : surfaceColor(sumB.primary_surface ?? 'Unknown');
+
   if (!h2h) {
     mount.insertAdjacentHTML(
       'beforeend',
       `<p class="h2h-none">${escapeHtml(nameA)} and ${escapeHtml(nameB)} have not met in this dataset.</p>`,
     );
   } else {
-    mount.appendChild(scoreboard(nameA, nameB, h2h));
+    mount.appendChild(scoreboard(nameA, nameB, h2h, colorA, colorB));
+    mount.appendChild(h2hSurfaceBreakdown(bySurface, nameA, nameB));
   }
 
   mount.appendChild(surfaceCompare(splitsA, splitsB, nameA, nameB));

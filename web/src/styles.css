@@ -251,6 +251,28 @@ a:hover { color: var(--accent); }
 .cbar__fill { height: 100%; background: var(--c); border-radius: 5px; min-width: 2px; }
 .cbar--b .cbar__fill { background: color-mix(in srgb, var(--c) 55%, var(--paper)); }
 
+/* subnote under an eyebrow (clarifies a section) */
+.subnote { margin: 0 0 var(--s5); font-size: var(--t-cap); }
+
+/* de-emphasized surfaces (< MINOR_THRESHOLD matches): subordinate to the big three */
+.bar--minor .bar__pct { font-size: 1.5rem; color: var(--ink-soft); }
+.bar--minor .bar__surface { font-size: 0.95rem; color: var(--ink-soft); }
+.bar--minor .swatch { opacity: 0.6; }
+.bar--minor .bar__track { opacity: 0.5; }
+.bar--minor .bar__cap { color: var(--ink-faint); }
+
+/* ----- rivalry by surface (their actual meetings) ------------------------ */
+.rs-grid { display: flex; flex-direction: column; gap: var(--s5); }
+.rs-row { --c: var(--surface-Unknown); }
+.rs-row__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--s2); }
+.rs-surface { display: inline-flex; align-items: center; gap: var(--s3); font-family: var(--font-head); font-weight: 600; }
+.rs-count { font-size: var(--t-cap); color: var(--ink-faint); }
+.rs-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: color-mix(in srgb, var(--c) 14%, var(--paper-raise)); }
+.rs-bar__a { background: var(--c); }
+.rs-bar__b { background: color-mix(in srgb, var(--c) 48%, var(--paper)); }
+.rs-split { display: flex; justify-content: space-between; margin-top: 6px; font-size: var(--t-cap); color: var(--ink-soft); }
+.rs-split strong { font-family: var(--font-display); font-weight: 700; color: var(--ink); margin: 0 2px; }
+
 /* ----- states ------------------------------------------------------------ */
 .loading { color: var(--ink-faint); font-size: 0.95rem; }
 

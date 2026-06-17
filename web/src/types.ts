@@ -51,3 +51,13 @@ export interface H2HRow {
   opp_wins: number;
   last_meeting_date: string | null;
 }
+
+export interface H2HBySurfaceRow {
+  player_id: number;
+  opp_id: number;
+  surface: string;
+  opp_name: string | null;
+  meetings: number;
+  player_wins: number;
+  opp_wins: number;
+}

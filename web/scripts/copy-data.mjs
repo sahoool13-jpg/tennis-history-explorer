@@ -17,6 +17,7 @@ const WANTED = new Set([
   'surface_splits.parquet',
   'player_summary.parquet',
   'h2h.parquet',
+  'h2h_by_surface.parquet',
   'rankings.parquet',
   'surface_palette.json',
 ]);

@@ -9,9 +9,12 @@ import eh_worker from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url'
 
 import type {
   PlayerSearchRow, PlayerSummary, SurfaceSplit, CareerArcPoint, H2HRow,
+  H2HBySurfaceRow,
 } from './types';
 
-const TABLES = ['surface_splits', 'player_summary', 'h2h', 'rankings'] as const;
+const TABLES = [
+  'surface_splits', 'player_summary', 'h2h', 'h2h_by_surface', 'rankings',
+] as const;
 
 let connPromise: Promise<duckdb.AsyncDuckDBConnection> | null = null;
 
@@ -131,4 +134,17 @@ export async function getH2H(
       WHERE player_id = ${intId(id1)} AND opp_id = ${intId(id2)}`,
   );
   return rows[0] ?? null;
+}
+
+// Per-surface breakdown of one directed rivalry (their actual meetings).
+export function getH2HBySurface(
+  id1: number | string,
+  id2: number | string,
+): Promise<H2HBySurfaceRow[]> {
+  return query<H2HBySurfaceRow>(
+    `SELECT player_id, opp_id, surface, opp_name, meetings, player_wins, opp_wins
+       FROM h2h_by_surface
+      WHERE player_id = ${intId(id1)} AND opp_id = ${intId(id2)}
+      ORDER BY meetings DESC`,
+  );
 }

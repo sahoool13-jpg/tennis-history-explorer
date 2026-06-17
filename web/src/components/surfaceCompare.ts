@@ -14,7 +14,10 @@ export function surfaceCompare(
 ): HTMLElement {
   const root = document.createElement('section');
   root.className = 'panel compare';
-  root.innerHTML = `<p class="eyebrow">Surface split · shared scale</p>`;
+  root.innerHTML =
+    `<p class="eyebrow">Career surface record · shared scale</p>` +
+    `<p class="subnote faint">Each player's overall win rate by surface — ` +
+    `not just their meetings with each other.</p>`;
 
   const byA = new Map(splitsA.map((s) => [s.surface, s]));
   const byB = new Map(splitsB.map((s) => [s.surface, s]));

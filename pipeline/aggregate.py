@@ -168,6 +168,25 @@ def build_h2h(matches):
 
 
 # --------------------------------------------------------------------------- #
+# h2h_by_surface.parquet (Phase 2.5)
+# --------------------------------------------------------------------------- #
+def build_h2h_by_surface(matches):
+    """Directed head-to-head split by surface. Built from the player-long match
+    fact (every individual meeting carries its surface) — NOT derived from the
+    surfaceless h2h.parquet aggregate."""
+    g = matches.groupby(["player_id", "opp_id", "surface"])
+    h = g.agg(
+        opp_name=("opp_name", "first"),
+        meetings=("won", "size"),
+        player_wins=("won", "sum"),
+    ).reset_index()
+    h["player_wins"] = h["player_wins"].astype("int64")
+    h["opp_wins"] = h["meetings"] - h["player_wins"]
+    return h[["player_id", "opp_id", "surface", "opp_name",
+              "meetings", "player_wins", "opp_wins"]]
+
+
+# --------------------------------------------------------------------------- #
 # dates -> date (match Phase 1 storage)
 # --------------------------------------------------------------------------- #
 def dates_to_date(df, cols):
@@ -267,6 +286,34 @@ def run_gate(players, surface_splits, player_summary, h2h):
     return ok
 
 
+def run_h2h_surface_gate(h2h, hbs):
+    """Reconcile h2h_by_surface against the surfaceless h2h aggregate for a
+    known pair. NB: the spec cited id 104745 for Djokovic, but that id is Nadal;
+    Djokovic is 104925 — and 104925 is the pair whose totals are 51 / 23, which
+    is what the spec's numbers describe."""
+    print("\n===== PHASE 2.5 GATE (h2h_by_surface) =====")
+    FED, DJO = 103819, 104925
+    pair = hbs[(hbs["player_id"] == FED) & (hbs["opp_id"] == DJO)]
+    agg = h2h[(h2h["player_id"] == FED) & (h2h["opp_id"] == DJO)].iloc[0]
+
+    sum_m, sum_w = int(pair["meetings"].sum()), int(pair["player_wins"].sum())
+    agg_m, agg_w = int(agg["meetings"]), int(agg["player_wins"])
+
+    c1 = sum_m == agg_m == 51
+    c2 = sum_w == agg_w == 23
+    print(f"[{'PASS' if c1 else 'FAIL'}] sum surface meetings ({sum_m}) == "
+          f"h2h meetings ({agg_m}) == 51")
+    print(f"[{'PASS' if c2 else 'FAIL'}] sum surface player_wins ({sum_w}) == "
+          f"h2h player_wins ({agg_w}) == 23")
+    print("Fed -> Djokovic surface breakdown (eyeball check):")
+    for _, r in pair.sort_values("meetings", ascending=False).iterrows():
+        print(f"   {r['surface']:<7} {int(r['meetings']):2d} meetings  "
+              f"Federer {int(r['player_wins'])}–{int(r['opp_wins'])} Djokovic")
+    ok = c1 and c2
+    print(f"===== GATE {'PASSED' if ok else 'FAILED'} =====\n")
+    return ok
+
+
 def describe(name, df, path):
     size = path.stat().st_size
     print(f"\n--- {name} ---")
@@ -282,9 +329,12 @@ def main():
     surface_splits = build_surface_splits(matches)
     player_summary = build_player_summary(matches, players, rankings, surface_splits)
     h2h = build_h2h(matches)
+    h2h_by_surface = build_h2h_by_surface(matches)
 
     if not run_gate(players, surface_splits, player_summary, h2h):
         sys.exit("Gate failed — not writing artifacts.")
+    if not run_h2h_surface_gate(h2h, h2h_by_surface):
+        sys.exit("h2h_by_surface gate failed — not writing artifacts.")
 
     # convert date columns back to date for storage (consistent with Phase 1)
     player_summary = dates_to_date(
@@ -297,11 +347,13 @@ def main():
     ss_path = BUILT / "surface_splits.parquet"
     ps_path = BUILT / "player_summary.parquet"
     h_path = BUILT / "h2h.parquet"
+    hbs_path = BUILT / "h2h_by_surface.parquet"
     palette_path = BUILT / "surface_palette.json"
 
     surface_splits.to_parquet(ss_path, index=False)
     player_summary.to_parquet(ps_path, index=False)
     h2h.to_parquet(h_path, index=False)
+    h2h_by_surface.to_parquet(hbs_path, index=False)
     with open(palette_path, "w") as fh:
         json.dump(SURFACE_PALETTE, fh, indent=2)
         fh.write("\n")
@@ -309,6 +361,7 @@ def main():
     describe("surface_splits.parquet", surface_splits, ss_path)
     describe("player_summary.parquet", player_summary, ps_path)
     describe("h2h.parquet", h2h, h_path)
+    describe("h2h_by_surface.parquet", h2h_by_surface, hbs_path)
     print(f"\n--- surface_palette.json ---")
     print(f"path: {palette_path.relative_to(ROOT)}")
     print(f"size: {palette_path.stat().st_size} bytes")

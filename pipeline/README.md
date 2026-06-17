@@ -49,6 +49,10 @@ python pipeline/aggregate.py
   its spells/weeks (a new spell starts after a gap > `SPELL_GAP_DAYS`),
   weeks at No.1, tour-level titles, Olympic golds, and primary surface.
 - **`h2h.parquet`** — directed head-to-head pairs (both A→B and B→A).
+- **`h2h_by_surface.parquet`** (Phase 2.5) — directed head-to-head split by
+  surface, built from the player-long match fact (not derived from the
+  surfaceless `h2h.parquet`). Gated by reconciling its per-surface sums back to
+  `h2h.parquet` for a known pair (Federer–Djokovic: 51 meetings / 23 wins).
 - **`surface_palette.json`** — design tokens (surface → hex) for Phase 3.
 
 The Phase 2 gate cross-checks internal consistency (surface/h2h sums ==
