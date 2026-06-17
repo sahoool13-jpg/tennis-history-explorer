@@ -204,6 +204,36 @@ a:hover { color: var(--accent); }
 .bar__fill { height: 100%; background: var(--c); border-radius: 6px; min-width: 3px; }
 .bar__cap { margin-top: var(--s3); font-size: var(--t-cap); color: var(--ink-faint); }
 
+/* ----- surface section (signature radar beside the bars) ----------------- */
+.surface-section { display: flex; gap: var(--s6); align-items: flex-start; }
+.surface-section .surface-split { margin-bottom: 0; flex: 1 1 auto; min-width: 0; }
+.signature { flex: 0 0 196px; max-width: 196px; }
+.sig-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.sig-ring { fill: none; stroke: var(--line); stroke-width: 1; }
+.sig-spoke { stroke: var(--line); stroke-width: 1; }
+.sig-spoke--low { stroke-dasharray: 3 3; opacity: 0.7; }
+.sig-poly { fill-opacity: 0.18; stroke-width: 2; stroke-opacity: 0.9; stroke-linejoin: round; }
+.sig-vertex { stroke-width: 1.5; }
+.sig-vertex--low { stroke-dasharray: 2 2; }
+.sig-hit { cursor: pointer; }
+.sig-label { fill: var(--ink-soft); font: 600 11px/1 var(--font-head); }
+.sig-label--low { fill: var(--ink-faint); }
+.sig-cap { margin: var(--s2) 0 0; font-size: var(--t-cap); text-align: center; }
+.sig-shape {
+  transform-box: fill-box; transform-origin: center;
+  opacity: 0; transform: scale(0.6);
+}
+.sig-shape.in { opacity: 1; transform: scale(1); }
+
+@media (max-width: 560px) {
+  .surface-section { flex-direction: column; }
+  .signature { flex: 0 0 auto; width: 100%; max-width: 240px; margin: 0 auto; }
+  .sig-label, .sig-label--low { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sig-shape { opacity: 1; transform: none; }
+}
+
 /* ----- career arc -------------------------------------------------------- */
 .arc-svg { display: block; width: 100%; height: auto; overflow: visible; }
 .arc-line { stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }

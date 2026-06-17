@@ -1,6 +1,7 @@
 import { getPlayerSummary, getSurfaceSplits, getCareerArc } from '../db';
 import { surfaceColor } from '../palette';
 import { surfaceSplit } from '../components/surfaceSplit';
+import { signatureRadar } from '../components/signatureRadar';
 import { careerArc } from '../components/careerArc';
 import { escapeHtml } from '../components/searchBox';
 import { navigate } from '../router';
@@ -79,9 +80,14 @@ export async function renderPlayer(mount: HTMLElement, id: string): Promise<void
   btn.addEventListener('click', () => navigate(`/h2h/${summary.player_id}`));
   actions.appendChild(btn);
 
+  // surface section: the signature radar (identity feel) beside the exact bars
+  const surfaceSection = document.createElement('section');
+  surfaceSection.className = 'panel surface-section';
+  surfaceSection.append(signatureRadar(splits, accent), surfaceSplit(splits));
+
   mount.append(
     headerCard(summary),
-    surfaceSplit(splits),
+    surfaceSection,
     careerArc(arc, summary.career_high_rank, accent),
     actions,
   );
