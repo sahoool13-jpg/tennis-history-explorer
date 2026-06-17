@@ -156,17 +156,14 @@ a:hover { color: var(--accent); }
 .panel { margin: 0 0 var(--s7); }
 .section-rule { height: 1px; background: var(--line); border: 0; margin: var(--s7) 0; }
 
-/* ----- player header ----------------------------------------------------- */
+/* ----- player header (open editorial masthead, no box) ------------------- */
 .player-header {
-  position: relative;
-  padding: var(--s6) var(--s5) var(--s6) calc(var(--s5) + 6px);
+  padding: 0 0 var(--s5);
   margin-bottom: var(--s7);
-  background: color-mix(in srgb, var(--accent) 8%, var(--paper));
-  border-radius: var(--radius);
 }
-.player-header::before {
-  content: ""; position: absolute; left: 0; top: var(--s5); bottom: var(--s5);
-  width: 4px; border-radius: 3px; background: var(--accent);
+.player-header__accent {
+  display: block; width: 52px; height: 4px; border-radius: 3px;
+  background: var(--accent); margin-bottom: var(--s4);
 }
 .player-header__name {
   font-family: var(--font-display); font-weight: 800;

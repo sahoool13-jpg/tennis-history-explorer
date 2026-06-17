@@ -32,6 +32,7 @@ function headerCard(s: PlayerSummary): HTMLElement {
       : '';
 
   card.innerHTML = `
+    <span class="player-header__accent" aria-hidden="true"></span>
     <h1 class="player-header__name">${escapeHtml(s.player_name)}${ioc}</h1>
     <p class="player-header__sub">${escapeHtml(hand)} · ${s.total_matches} matches ·
       ${fmtDate(s.first_match_date)} – ${fmtDate(s.last_match_date)}</p>

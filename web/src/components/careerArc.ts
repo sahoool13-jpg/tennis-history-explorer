@@ -18,7 +18,22 @@ export function careerArc(
     return root;
   }
 
-  const data = points.map((p) => ({ date: new Date(p.ranking_date), rank: p.rank }));
+  // Display-only: clamp to the 2000+ era so the axis scales to the modern data
+  // window (matching the match data) instead of squashing the plateau by a
+  // pre-2000 tail. Does not alter the underlying slice or any computed value.
+  const ERA_START = new Date('2000-01-01');
+  const data = points
+    .map((p) => ({ date: new Date(p.ranking_date), rank: p.rank }))
+    .filter((d) => d.date >= ERA_START);
+
+  if (data.length === 0) {
+    root.insertAdjacentHTML(
+      'beforeend',
+      `<p class="muted">No ranking history in the 2000+ era.</p>`,
+    );
+    return root;
+  }
+
   const peaks =
     careerHighRank == null ? [] : data.filter((d) => d.rank === careerHighRank);
 
