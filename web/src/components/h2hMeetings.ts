@@ -10,6 +10,11 @@ const ROUND_LABEL: Record<string, string> = {
   R32: 'round of 32', R64: 'round of 64', R128: 'round of 128', RR: 'round robin',
 };
 const TIER_RANK: Record<string, number> = { G: 5, F: 4, M: 3, O: 2, A: 1, D: 0 };
+const ROUND_ORD: Record<string, number> = { F: 7, SF: 6, QF: 5, R16: 4, R32: 3, R64: 2, R128: 1, RR: 0 };
+const pluralRound = (r: string | null) => {
+  const base = roundLabel(r); // "final", "semifinal", "round of 16"…
+  return base ? `${base}s` : 'matches';
+};
 const roundLabel = (r: string | null) => (r ? ROUND_LABEL[r] ?? r.toLowerCase() : '');
 const yr = (d: string) => (d || '').slice(0, 4);
 
@@ -65,14 +70,33 @@ export function contextStrip(
   facts.push({ label: 'Most recent', value: `${escapeHtml(last.tourney_name ?? '')} ${yr(last.date)}`,
     sub: `${escapeHtml(winnerName(last))} won` });
 
-  // biggest stage: highest tournament tier, latest if tied
-  const biggest = [...meetings].sort((a, b) => {
-    const t = (TIER_RANK[b.tourney_level ?? ''] ?? 0) - (TIER_RANK[a.tourney_level ?? ''] ?? 0);
-    return t !== 0 ? t : (b.date < a.date ? -1 : 1);
-  })[0];
-  facts.push({ label: 'Biggest stage',
-    value: `${escapeHtml(biggest.tourney_name ?? '')} ${roundLabel(biggest.round)}`.trim(),
-    sub: `${yr(biggest.date)} · ${escapeHtml(winnerName(biggest))}` });
+  // biggest stage: highest tier present, then highest round within that tier.
+  // Count how many meetings happened at that top stage — if more than one
+  // (e.g. nine Grand Slam finals), the count + breakdown IS the fact. Different
+  // Slams at the same tier+round are equal: we list/count them, never rank them.
+  const tierOf = (m: Meeting) => TIER_RANK[m.tourney_level ?? ''] ?? -1;
+  const roundOf = (m: Meeting) => ROUND_ORD[m.round ?? ''] ?? -1;
+  const topTier = Math.max(...meetings.map(tierOf));
+  const inTier = meetings.filter((m) => tierOf(m) === topTier);
+  const topRound = Math.max(...inTier.map(roundOf));
+  const topStage = inTier.filter((m) => roundOf(m) === topRound);
+  const lvl = topStage[0].level_label ?? '';
+  if (topStage.length === 1) {
+    const m = topStage[0];
+    facts.push({ label: 'Biggest stage',
+      value: `${escapeHtml(m.tourney_name ?? '')} ${yr(m.date)}`,
+      sub: `${escapeHtml(lvl)} ${roundLabel(m.round)} · ${escapeHtml(winnerName(m))}` });
+  } else {
+    const byT = new Map<string, number>();
+    for (const m of topStage) byT.set(m.tourney_name ?? '—', (byT.get(m.tourney_name ?? '—') ?? 0) + 1);
+    const recent = yr(topStage.reduce((a, b) => ((b.date || '') > (a.date || '') ? b : a)).date);
+    const parts = [...byT.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([t, n]) => `${escapeHtml(t)} ×${n}`);
+    facts.push({ label: 'Biggest stage',
+      value: `${topStage.length} ${escapeHtml(lvl)} ${pluralRound(topStage[0].round)}`,
+      sub: `${parts.join(' · ')} — last ${recent}` });
+  }
 
   // longest match by recorded time (coverage caveat)
   const timed = meetings.filter((m) => m.minutes != null && m.minutes > 0);
