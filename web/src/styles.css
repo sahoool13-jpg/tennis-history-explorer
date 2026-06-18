@@ -904,6 +904,29 @@ body.landing-mode .sitefoot { display: none; }
 .mp-match--norank { padding-left: var(--s4); }
 .lb-card { border-top: 2px solid var(--lb-accent); padding-top: var(--s3); }
 
+/* ----- overview charts (one per board, hand-rolled SVG) ------------------ */
+.mp-chart { margin: 0 0 var(--s7); }
+.mp-chart__svg { display: block; width: 100%; height: auto; overflow: visible; margin: var(--s2) 0 var(--s3); }
+.mp-chart__cap { margin: 0; font-size: var(--t-cap); max-width: 72ch; }
+.mp-axis { fill: var(--ink-faint); font-family: var(--font-body); font-size: 11px; font-variant-numeric: tabular-nums; }
+.mp-axis--row { fill: var(--ink-soft); font-weight: 600; }
+.mp-axis-line, .mp-grid { stroke: var(--line); stroke-width: 1; }
+.mp-grid { stroke: var(--line-soft); }
+/* histogram bars (neutral ink); leaders picked out in optic yellow */
+.mp-bar2 { fill: var(--ink); opacity: 0.82; }
+.mp-mark-line { stroke: var(--accent); stroke-width: 2; }
+.mp-mark-lab { fill: var(--accent-strong); font-family: var(--font-head); font-weight: 600; font-size: 10.5px; }
+/* scatter */
+.mp-pt { fill: var(--ink); opacity: 0.32; }
+.mp-pt--hi { fill: var(--accent); stroke: var(--ink); stroke-width: 1; }
+.mp-pt-lab { fill: var(--ink); font-family: var(--font-head); font-weight: 700; font-size: 11px; }
+/* comeback tier bars */
+.mp-cbar { fill: var(--ink); opacity: 0.82; }
+.mp-cbar--hi { fill: var(--accent); }
+.mp-val2 { fill: var(--ink-soft); font-family: var(--font-display); font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; }
+/* surface stack */
+.mp-stack-pct { fill: var(--paper-raise); font-family: var(--font-head); font-weight: 700; font-size: 11px; font-variant-numeric: tabular-nums; }
+
 /* 3 — optic-yellow pop: the daily-puzzle primary action (one clear highlight).
    Ink on optic yellow passes contrast comfortably. */
 .pz-share {

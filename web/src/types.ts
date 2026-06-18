@@ -163,6 +163,13 @@ export interface MpMatchPage { rows: MpMatch[]; total: number; }
 // A page of player rows for an explorable career board.
 export interface MpPlayerPage { rows: MpPlayerRow[]; total: number; }
 
+// --- overview-chart rows (presentation only, from existing gated data) ------
+export interface TbRateRow { player_id: number; player_name: string; rate: number; played: number; }
+export interface MpScatterPoint { year: number; minutes: number; label: string; }
+export interface MpTierRow { tier: string; n: number; }
+export interface MpSurfaceCount { surface: string; n: number; }
+export interface MpCoverage { total: number; with_minutes: number; }
+
 // One individual meeting between two players (from matches.parquet).
 export interface Meeting {
   date: string;

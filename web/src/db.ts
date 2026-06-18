@@ -12,6 +12,7 @@ import type {
   H2HBySurfaceRow, Meeting, EraStat, LeaderRow, RivalryRow,
   MpMatch, MpPlayerRow, MpSurfaceLength, MpLengthBucket, PuzzlePlayer,
   MpFilter, MpMatchPage, MpPlayerPage,
+  TbRateRow, MpScatterPoint, MpTierRow, MpSurfaceCount, MpCoverage,
 } from './types';
 
 const TABLES = [
@@ -377,6 +378,74 @@ export const mpTiebreakRate = (floor = 100, n = 15, q?: string, includeTeam = fa
     `${c.won} * 1.0 / ${c.played} DESC`,
     `CAST(${c.won} AS VARCHAR) || ' / ' || CAST(${c.played} AS VARCHAR)`, n, q);
 };
+
+// --- overview charts: presentation aggregations over existing gated data ----
+// All default to the board's tour-level scope (matching the list default). No
+// new precomputed metrics — these read the same columns the lists already use.
+const tourClause = (includeTeam: boolean) =>
+  includeTeam ? '' : " AND m.competition_type = 'Tour'";
+
+// Tiebreak win-rate of every qualified player (for the distribution histogram).
+export function mpTiebreakRates(floor = 100, includeTeam = false): Promise<TbRateRow[]> {
+  const c = tbCols(includeTeam);
+  return query<TbRateRow>(
+    `SELECT s.player_id AS player_id, s.player_name AS player_name,
+            ${c.won} * 1.0 / ${c.played} AS rate, ${c.played} AS played
+       FROM mp_player_stats s
+      WHERE ${c.played} >= ${floor | 0}
+      ORDER BY rate DESC`);
+}
+
+// Genuine marathons (>= minMinutes, plausible only) as year/minutes points.
+export function mpMarathonScatter(includeTeam = false, minMinutes = 240): Promise<MpScatterPoint[]> {
+  return query<MpScatterPoint>(
+    `SELECT CAST(EXTRACT(year FROM m.tourney_date) AS INTEGER) AS year,
+            m.minutes AS minutes, m.player_name || ' d. ' || m.opp_name AS label
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+       JOIN mp_match_facts mf ON m.match_id = mf.match_id
+      WHERE m.won AND ms.is_completed AND mf.minutes_plausible
+        AND m.minutes >= ${minMinutes | 0}${tourClause(includeTeam)}
+      ORDER BY m.minutes DESC`);
+}
+
+// Minutes coverage among completed matches (for the Marathons caveat).
+export async function mpMinutesCoverage(includeTeam = false): Promise<MpCoverage> {
+  const rows = await query<MpCoverage>(
+    `SELECT COUNT(*) AS total,
+            COUNT(CASE WHEN mf.minutes_plausible THEN 1 END) AS with_minutes
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+       JOIN mp_match_facts mf ON m.match_id = mf.match_id
+      WHERE m.won AND ms.is_completed${tourClause(includeTeam)}`);
+  return rows[0] ?? { total: 0, with_minutes: 0 };
+}
+
+// Comebacks grouped by the rank tier of the opponent fought past.
+export function mpComebacksByTier(includeTeam = false): Promise<MpTierRow[]> {
+  return query<MpTierRow>(
+    `SELECT CASE WHEN m.opp_rank IS NULL THEN 'Unranked'
+                 WHEN m.opp_rank <= 10 THEN 'Top 10'
+                 WHEN m.opp_rank <= 30 THEN 'No. 11–30'
+                 WHEN m.opp_rank <= 100 THEN 'No. 31–100'
+                 ELSE 'No. 100+' END AS tier,
+            COUNT(*) AS n
+       FROM matches m
+       JOIN mp_match_facts mf ON m.match_id = mf.match_id
+      WHERE m.won AND mf.is_comeback${tourClause(includeTeam)}
+      GROUP BY 1`);
+}
+
+// Surface composition of the tour-level blowouts (<= maxGames dropped).
+export function mpBlowoutSurfaceMix(includeTeam = false, maxGames = 3): Promise<MpSurfaceCount[]> {
+  return query<MpSurfaceCount>(
+    `SELECT m.surface AS surface, COUNT(*) AS n
+       FROM matches m
+       JOIN match_scores ms ON m.match_id = ms.match_id
+      WHERE m.won AND ms.is_completed
+        AND ms.games_won_loser <= ${maxGames | 0}${tourClause(includeTeam)}
+      GROUP BY 1`);
+}
 
 export const mpMostRetired = (n = 15, q?: string) =>
   mpBoard('s.retired', 's.retired > 0', 's.retired DESC, s.matches DESC', 'NULL', n, q);
