@@ -4,16 +4,14 @@
 // filter; career player boards filter by player name. All integrity gates live
 // in the db.ts base queries — filters only narrow them.
 import {
-  mpBagelsDished, mpBreadsticksDished, mpTiebreakStats,
+  mpBagelsDished, mpBreadsticksDished, mpTiebreaksPlayed, mpTiebreakRate,
   mpMostRetired, mpWonByRetirement, mpLengthBySurface, mpLengthHistogram,
 } from './db';
 import { mpHeader, mpTakeaway, loadingLine, fmtDuration, errorCard } from './mpkit';
 import { matchExplorer, playerExplorer } from './mpexplore';
 import type { PlayerBoardSpec } from './mpexplore';
 import { surfaceColor } from './palette';
-import type {
-  MpPlayerRow, MpLengthBucket, MpSurfaceLength, MpPlayerPage, TiebreakStatRow,
-} from './types';
+import type { MpPlayerRow, MpLengthBucket, MpSurfaceLength } from './types';
 
 // floors, declared once so the UI copy and the query stay in lockstep
 const FLOOR_BAGEL = 50;
@@ -103,42 +101,11 @@ export function renderTiebreaks(mount: HTMLElement): Promise<void> {
     + 'with the toggle. Win rate applies a minimum so a few good breakers can’t '
     + 'top a career of them. Search by player to find anyone.'));
   mount.appendChild(mpTakeaway('The biggest servers play the most tiebreaks — but the best win rates belong to the all-court greats.'));
-  // One JSON pass over the match level, cached; the boards filter/slice it.
-  const statsP = mpTiebreakStats();
-  const played = (r: TiebreakStatRow, team: boolean) => team ? r.played_all : r.played_tour;
-  const won = (r: TiebreakStatRow, team: boolean) => team ? r.won_all : r.won_tour;
-  const matches = (r: TiebreakStatRow, team: boolean) => team ? r.matches_all : r.matches_tour;
-
-  function page(
-    rows: TiebreakStatRow[], metric: 'played' | 'rate',
-    floor: number, limit: number, q?: string, team = false,
-  ): MpPlayerPage {
-    const ql = (q ?? '').trim().toLowerCase();
-    let elig = rows.filter((r) => metric === 'played'
-      ? matches(r, team) >= floor && played(r, team) > 0
-      : played(r, team) >= floor);
-    if (ql) elig = elig.filter((r) => r.player_name.toLowerCase().includes(ql));
-    elig.sort((a, b) => metric === 'played'
-      ? played(b, team) - played(a, team)
-      : won(b, team) / played(b, team) - won(a, team) / played(a, team));
-    const out: MpPlayerRow[] = elig.slice(0, limit).map((r) => ({
-      player_id: r.player_id, player_name: r.player_name, ioc: r.ioc,
-      matches: matches(r, team),
-      value: metric === 'played' ? played(r, team) : won(r, team) / played(r, team),
-      detail: metric === 'played'
-        ? `${won(r, team)} won`
-        : `${won(r, team)} / ${played(r, team)}`,
-    }));
-    return { rows: out, total: elig.length };
-  }
-
   mount.appendChild(playerExplorer([
     { title: 'Most tiebreaks played', caption: `Set tiebreaks · min ${FLOOR_TB} matches`,
-      fetch: (n, q, team) => statsP.then((rows) => page(rows, 'played', FLOOR_TB, n, q, team)),
-      fmt: intFmt },
+      fetch: (n, q, team) => mpTiebreaksPlayed(FLOOR_TB, n, q, team), fmt: intFmt },
     { title: 'Best tiebreak win rate', caption: `min ${FLOOR_TB_RATE} tiebreaks played`,
-      fetch: (n, q, team) => statsP.then((rows) => page(rows, 'rate', FLOOR_TB_RATE, n, q, team)),
-      fmt: pctFmt },
+      fetch: (n, q, team) => mpTiebreakRate(FLOOR_TB_RATE, n, q, team), fmt: pctFmt },
   ], { teamToggle: true }));
   return Promise.resolve();
 }

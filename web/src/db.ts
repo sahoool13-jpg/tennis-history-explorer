@@ -11,7 +11,7 @@ import type {
   PlayerSearchRow, PlayerSummary, SurfaceSplit, CareerArcPoint, H2HRow,
   H2HBySurfaceRow, Meeting, EraStat, LeaderRow, RivalryRow,
   MpMatch, MpPlayerRow, MpSurfaceLength, MpLengthBucket, PuzzlePlayer,
-  MpFilter, MpMatchPage, MpPlayerPage, TiebreakStatRow,
+  MpFilter, MpMatchPage, MpPlayerPage,
 } from './types';
 
 const TABLES = [
@@ -356,43 +356,27 @@ export const mpBagelsDished = (floor = 50, n = 15, q?: string) =>
 export const mpBreadsticksDished = (floor = 50, n = 15, q?: string) =>
   mpBoard('s.breadsticks_dished', `s.matches >= ${floor | 0} AND s.breadsticks_dished > 0`,
           's.breadsticks_dished DESC, s.matches ASC', 'NULL', n, q);
-// Tiebreaks are a PLAYER board, but to honour the tour-default we must count
-// only the matches that qualify — which means re-aggregating per player from the
-// match level (the gated mp_player_stats totals are all-competitions and can't be
-// sliced by tier). Computed live from the verified structured `sets_detail`
-// (NOT the raw score): one row per player carrying both tour-only and all-comp
-// totals, so the UI can switch via the team-events toggle. Tiebreak-set winner
-// follows the parser's rule exactly (winner if w>l, else loser), so the all-comp
-// numbers reconcile to mp_player_stats. One JSON pass; the view caches it and
-// slices/filters client-side.
-export function mpTiebreakStats(): Promise<TiebreakStatRow[]> {
-  return query<TiebreakStatRow>(
-    `WITH tb AS (
-       SELECT ms.match_id, m.player_id AS win_id, m.opp_id AS los_id,
-              m.competition_type AS ct, ms.num_tiebreaks AS ntb,
-              COALESCE(SUM(CASE WHEN (s.value->>'tiebreak')='true'
-                AND (s.value->>'w_games')::INT >  (s.value->>'l_games')::INT THEN 1 ELSE 0 END),0) AS tbw_w,
-              COALESCE(SUM(CASE WHEN (s.value->>'tiebreak')='true'
-                AND (s.value->>'w_games')::INT <= (s.value->>'l_games')::INT THEN 1 ELSE 0 END),0) AS tbw_l
-         FROM matches m
-         JOIN match_scores ms ON m.match_id = ms.match_id
-         LEFT JOIN LATERAL json_each(ms.sets_detail) s ON TRUE
-        WHERE m.won AND NOT ms.is_unparseable AND ms.num_sets > 0
-        GROUP BY ms.match_id, m.player_id, m.opp_id, m.competition_type, ms.num_tiebreaks
-     ),
-     tlong AS (
-       SELECT win_id AS pid, ct, ntb AS played, tbw_w AS won FROM tb
-       UNION ALL
-       SELECT los_id AS pid, ct, ntb AS played, tbw_l AS won FROM tb
-     )
-     SELECT t.pid AS player_id, p.player_name AS player_name, p.ioc AS ioc,
-            SUM(t.played) AS played_all, SUM(t.won) AS won_all, COUNT(*) AS matches_all,
-            SUM(CASE WHEN t.ct = 'Tour' THEN t.played ELSE 0 END) AS played_tour,
-            SUM(CASE WHEN t.ct = 'Tour' THEN t.won ELSE 0 END) AS won_tour,
-            SUM(CASE WHEN t.ct = 'Tour' THEN 1 ELSE 0 END) AS matches_tour
-       FROM tlong t JOIN player_summary p ON t.pid = p.player_id
-      GROUP BY t.pid, p.player_name, p.ioc`);
+// Tiebreaks read pre-baked columns from mp_player_stats — tour-only by default
+// (so Davis Cup tiebreaks don't pad totals), all-competition when the team-events
+// toggle is on. Both are computed in the pipeline (gated), so the browser does
+// NO live re-aggregation (an earlier json_each approach exhausted DuckDB-wasm
+// memory). Floors apply to the matching tier.
+function tbCols(includeTeam: boolean) {
+  return includeTeam
+    ? { played: 's.tiebreaks_played', won: 's.tiebreaks_won', matches: 's.matches' }
+    : { played: 's.tiebreaks_played_tour', won: 's.tiebreaks_won_tour', matches: 's.matches_tour' };
 }
+export const mpTiebreaksPlayed = (floor = 50, n = 15, q?: string, includeTeam = false) => {
+  const c = tbCols(includeTeam);
+  return mpBoard(c.played, `${c.matches} >= ${floor | 0} AND ${c.played} > 0`,
+    `${c.played} DESC`, `CAST(${c.won} AS VARCHAR) || ' won'`, n, q);
+};
+export const mpTiebreakRate = (floor = 100, n = 15, q?: string, includeTeam = false) => {
+  const c = tbCols(includeTeam);
+  return mpBoard(`${c.won} * 1.0 / ${c.played}`, `${c.played} >= ${floor | 0}`,
+    `${c.won} * 1.0 / ${c.played} DESC`,
+    `CAST(${c.won} AS VARCHAR) || ' / ' || CAST(${c.played} AS VARCHAR)`, n, q);
+};
 
 export const mpMostRetired = (n = 15, q?: string) =>
   mpBoard('s.retired', 's.retired > 0', 's.retired DESC, s.matches DESC', 'NULL', n, q);

@@ -163,16 +163,6 @@ export interface MpMatchPage { rows: MpMatch[]; total: number; }
 // A page of player rows for an explorable career board.
 export interface MpPlayerPage { rows: MpPlayerRow[]; total: number; }
 
-// Per-player tiebreak totals, live-aggregated from match level, carrying both
-// tour-only and all-competition figures so the team-events toggle can switch.
-export interface TiebreakStatRow {
-  player_id: number;
-  player_name: string;
-  ioc: string | null;
-  played_all: number; won_all: number; matches_all: number;
-  played_tour: number; won_tour: number; matches_tour: number;
-}
-
 // One individual meeting between two players (from matches.parquet).
 export interface Meeting {
   date: string;

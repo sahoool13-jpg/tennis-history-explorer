@@ -41,7 +41,7 @@ def load():
     ms = pd.read_parquet(BUILT / "match_scores.parquet")
     w = m[m["won"] == True][[  # noqa: E712  winner rows carry winner-first score
         "match_id", "player_id", "player_name", "opp_id", "opp_name",
-        "best_of", "minutes",
+        "best_of", "minutes", "competition_type",
     ]].copy()
     df = w.merge(ms, on="match_id", how="left", validate="one_to_one")
     return df
@@ -113,6 +113,14 @@ def build_player_stats(df):
     pop["tbw_w"] = [t[0] for t in tb]
     pop["tbw_l"] = [t[1] for t in tb]
     pop["ntb"] = pop["num_tiebreaks"].fillna(0).astype("int64")
+    # tour-level mask (G/M/A/F). Tour-only tiebreak figures are pre-baked here so
+    # the browser never has to re-aggregate sets_detail live (that blew up
+    # DuckDB-wasm memory). Davis Cup / Olympics fall outside this.
+    is_tour = (pop["competition_type"] == "Tour")
+    pop["ntb_tour"] = pop["ntb"].where(is_tour, 0)
+    pop["tbw_w_tour"] = pop["tbw_w"].where(is_tour, 0)
+    pop["tbw_l_tour"] = pop["tbw_l"].where(is_tour, 0)
+    pop["match_tour"] = is_tour.astype("int64")
 
     # retirements use ALL matches (a retirement is a match outcome, not a set).
     ret = df[df["is_retirement"] == True]  # noqa: E712
@@ -123,7 +131,8 @@ def build_player_stats(df):
             "bagels_dished": pop["bagels_winner"], "bagels_received": pop["bagels_loser"],
             "breadsticks_dished": pop["breadsticks_winner"], "breadsticks_received": pop["breadsticks_loser"],
             "tiebreaks_played": pop["ntb"], "tiebreaks_won": pop["tbw_w"],
-            "matches": 1,
+            "tiebreaks_played_tour": pop["ntb_tour"], "tiebreaks_won_tour": pop["tbw_w_tour"],
+            "matches": 1, "matches_tour": pop["match_tour"],
         })
 
     def loser_side():
@@ -132,23 +141,28 @@ def build_player_stats(df):
             "bagels_dished": pop["bagels_loser"], "bagels_received": pop["bagels_winner"],
             "breadsticks_dished": pop["breadsticks_loser"], "breadsticks_received": pop["breadsticks_winner"],
             "tiebreaks_played": pop["ntb"], "tiebreaks_won": pop["tbw_l"],
-            "matches": 1,
+            "tiebreaks_played_tour": pop["ntb_tour"], "tiebreaks_won_tour": pop["tbw_l_tour"],
+            "matches": 1, "matches_tour": pop["match_tour"],
         })
 
     long = pd.concat([winner_side(), loser_side()], ignore_index=True)
     for c in ["bagels_dished", "bagels_received", "breadsticks_dished",
-              "breadsticks_received", "tiebreaks_played", "tiebreaks_won"]:
+              "breadsticks_received", "tiebreaks_played", "tiebreaks_won",
+              "tiebreaks_played_tour", "tiebreaks_won_tour", "matches_tour"]:
         long[c] = long[c].fillna(0).astype("int64")
 
     agg = long.groupby("player_id").agg(
         player_name=("name", "first"),
         matches=("matches", "sum"),
+        matches_tour=("matches_tour", "sum"),
         bagels_dished=("bagels_dished", "sum"),
         bagels_received=("bagels_received", "sum"),
         breadsticks_dished=("breadsticks_dished", "sum"),
         breadsticks_received=("breadsticks_received", "sum"),
         tiebreaks_played=("tiebreaks_played", "sum"),
         tiebreaks_won=("tiebreaks_won", "sum"),
+        tiebreaks_played_tour=("tiebreaks_played_tour", "sum"),
+        tiebreaks_won_tour=("tiebreaks_won_tour", "sum"),
     )
 
     # retirements: the retiring player is the match loser; the beneficiary wins.
@@ -199,6 +213,42 @@ def run_gate(df, stats, facts, pop, ret):
           f"tiebreaks won: sum {sum_tbw} == direct {direct_tb} "
           f"(every tiebreak has one winner)")
 
+    # tour-only tiebreaks reconcile to the direct tour-level count
+    tour_pop = pop[pop["competition_type"] == "Tour"]
+    direct_tb_tour = int(tour_pop["num_tiebreaks"].fillna(0).sum())
+    sum_tbp_tour = int(stats["tiebreaks_played_tour"].sum())
+    sum_tbw_tour = int(stats["tiebreaks_won_tour"].sum())
+    check(sum_tbp_tour == 2 * direct_tb_tour,
+          f"TOUR tiebreaks played: sum {sum_tbp_tour} == 2 x direct {2 * direct_tb_tour}")
+    check(sum_tbw_tour == direct_tb_tour,
+          f"TOUR tiebreaks won: sum {sum_tbw_tour} == direct {direct_tb_tour}")
+    # tour figures must never exceed all-comp figures, per player
+    bad_tour = int(((stats["tiebreaks_played_tour"] > stats["tiebreaks_played"])
+                    | (stats["tiebreaks_won_tour"] > stats["tiebreaks_won"])
+                    | (stats["matches_tour"] > stats["matches"])).sum())
+    check(bad_tour == 0, f"tour figures <= all-comp figures per player: violations={bad_tour}")
+
+    # all-comp columns must be byte-identical to the already-shipped aggregate
+    # (no shipped number changes) — compare against the existing parquet if present
+    old_path = BUILT / "mp_player_stats.parquet"
+    if old_path.exists():
+        old = pd.read_parquet(old_path)
+        shared = [c for c in ["player_id", "matches", "bagels_dished", "bagels_received",
+                  "breadsticks_dished", "breadsticks_received", "tiebreaks_played",
+                  "tiebreaks_won", "retired", "wins_by_retirement"] if c in old.columns]
+        merged = stats[shared].merge(old[shared], on="player_id", suffixes=("_new", "_old"))
+        mism = 0
+        for c in shared:
+            if c == "player_id":
+                continue
+            mism += int((merged[f"{c}_new"] != merged[f"{c}_old"]).sum())
+        same_rows = (len(stats) == len(old))
+        check(mism == 0 and same_rows,
+              f"all-comp totals unchanged vs shipped aggregate: mismatches={mism}, "
+              f"rows new={len(stats)} old={len(old)}")
+    else:
+        print("[skip] no existing mp_player_stats.parquet to diff against")
+
     n_ret = int((df["is_retirement"] == True).sum())  # noqa: E712
     sum_retired = int(stats["retired"].sum())
     sum_wbr = int(stats["wins_by_retirement"].sum())
@@ -218,6 +268,19 @@ def run_gate(df, stats, facts, pop, ret):
     top_bag = stats.sort_values("bagels_dished", ascending=False).iloc[0]
     print(f"  most bagels dished: {top_bag['player_name']} "
           f"({int(top_bag['bagels_dished'])})")
+
+    print("\n  TOUR-ONLY tiebreaks — VOLUME top 10 (min 50 tour matches):")
+    vol = stats[(stats["matches_tour"] >= 50) & (stats["tiebreaks_played_tour"] > 0)] \
+        .sort_values("tiebreaks_played_tour", ascending=False).head(10)
+    for _, r in vol.iterrows():
+        print(f"    {r['player_name']:<22} {int(r['tiebreaks_played_tour'])} played, "
+              f"{int(r['tiebreaks_won_tour'])} won")
+    print("  TOUR-ONLY tiebreaks — RATE top 10 (min 100 tour tiebreaks):")
+    rate = stats[stats["tiebreaks_played_tour"] >= 100].copy()
+    rate["r"] = rate["tiebreaks_won_tour"] / rate["tiebreaks_played_tour"]
+    for _, r in rate.sort_values("r", ascending=False).head(10).iterrows():
+        print(f"    {r['player_name']:<22} {r['r'] * 100:.1f}%  "
+              f"({int(r['tiebreaks_won_tour'])}/{int(r['tiebreaks_played_tour'])})")
 
     # single longest plausible match
     fj = df.merge(facts, on="match_id")
