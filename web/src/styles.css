@@ -927,6 +927,33 @@ body.landing-mode .sitefoot { display: none; }
 /* surface stack */
 .mp-stack-pct { fill: var(--paper-raise); font-family: var(--font-head); font-weight: 700; font-size: 11px; font-variant-numeric: tabular-nums; }
 
+/* ----- cross-board "Match Point profile" on the Rally player page -------- */
+.mp-prof { margin-top: var(--s7); }
+.mp-prof__row {
+  display: grid; grid-template-columns: 7.5em 1fr; gap: var(--s4);
+  align-items: baseline; padding: var(--s4) 0; border-top: 1px solid var(--line-soft);
+}
+.mp-prof__row:first-of-type { border-top: 1px solid var(--line); }
+.mp-prof__board {
+  font-family: var(--font-head); font-weight: 700; font-size: 0.92rem;
+  color: var(--ink); border-bottom: 2px solid transparent;
+}
+.mp-prof__board:hover { color: var(--accent-strong); border-color: var(--accent); }
+.mp-prof__body { min-width: 0; font-size: 0.96rem; color: var(--ink-soft); }
+.mp-prof__lead {
+  font-family: var(--font-display); font-weight: 800; font-size: 1.15rem;
+  color: var(--ink); margin-right: 0.15em;
+}
+.mp-prof__sub { display: block; margin-top: 3px; font-size: var(--t-cap); color: var(--ink-soft); }
+.mp-prof__ctx { color: var(--ink-faint); margin-left: 0.4em; }
+.mp-prof__seed { color: var(--accent-strong); font-weight: 700; }
+.mp-prof__res { font-family: var(--font-head); font-weight: 700; color: var(--ink-soft); }
+.mp-prof__empty { color: var(--ink-faint); }
+.mp-prof .mp-scoreline { font-size: 0.95rem; display: inline-flex; vertical-align: baseline; }
+@media (max-width: 560px) {
+  .mp-prof__row { grid-template-columns: 1fr; gap: var(--s1); }
+}
+
 /* 3 — optic-yellow pop: the daily-puzzle primary action (one clear highlight).
    Ink on optic yellow passes contrast comfortably. */
 .pz-share {

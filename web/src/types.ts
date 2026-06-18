@@ -170,6 +170,33 @@ export interface MpTierRow { tier: string; n: number; }
 export interface MpSurfaceCount { surface: string; n: number; }
 export interface MpCoverage { total: number; with_minutes: number; }
 
+// One match line in a player's cross-board Match Point profile.
+export interface MpProfileMatch {
+  opponent: string | null;
+  opp_rank: number | null;
+  set_scores: string;
+  tourney_name: string | null;
+  year: number | null;
+  surface: string;
+  minutes: number | null;
+  won: boolean;
+}
+// A player's standing across the five Match Point boards (tour-level default,
+// same rules each board uses).
+export interface MpPlayerProfile {
+  blowout_wins: number;
+  top_blowout: MpProfileMatch | null;
+  longest: MpProfileMatch | null;
+  tb_played: number;
+  tb_won: number;
+  tb_rate: number | null;
+  tb_qualifies: boolean;
+  comeback_count: number;
+  best_comeback: MpProfileMatch | null;
+  retired: number;
+  wins_by_retirement: number;
+}
+
 // One individual meeting between two players (from matches.parquet).
 export interface Meeting {
   date: string;

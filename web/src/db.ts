@@ -13,7 +13,10 @@ import type {
   MpMatch, MpPlayerRow, MpSurfaceLength, MpLengthBucket, PuzzlePlayer,
   MpFilter, MpMatchPage, MpPlayerPage,
   TbRateRow, MpScatterPoint, MpTierRow, MpSurfaceCount, MpCoverage,
+  MpProfileMatch, MpPlayerProfile,
 } from './types';
+
+const TB_RATE_FLOOR = 100; // mirrors the Tiebreaks rate board's min
 
 const TABLES = [
   'surface_splits', 'player_summary', 'h2h', 'h2h_by_surface', 'matches',
@@ -515,6 +518,75 @@ export function puzzlePool(): Promise<PuzzlePlayer[]> {
        FROM player_summary
       WHERE career_high_rank <= 30 AND total_matches >= 300
       ORDER BY player_id`);
+}
+
+// --- cross-board "Match Point profile" for a Rally player page -------------
+// Every figure uses the SAME default rules as the board it mirrors: tour-level
+// (competition_type='Tour'), completed where the board requires it, minutes-
+// plausibility for the longest match, the gated tour tiebreak columns, and the
+// genuine is_comeback flag. So the player page can never contradict the boards.
+const PROFILE_MATCH_COLS = (pid: number) => `
+  CASE WHEN m.player_id = ${pid} THEN m.opp_name ELSE m.player_name END AS opponent,
+  CASE WHEN m.player_id = ${pid} THEN m.opp_rank ELSE m.player_rank END AS opp_rank,
+  ms.set_scores AS set_scores, m.tourney_name AS tourney_name,
+  CAST(EXTRACT(year FROM m.tourney_date) AS INTEGER) AS year,
+  m.surface AS surface, m.minutes AS minutes, (m.player_id = ${pid}) AS won`;
+
+export async function mpPlayerProfile(id: number | string): Promise<MpPlayerProfile> {
+  const pid = intId(id);
+  const cols = PROFILE_MATCH_COLS(pid);
+  const [topBlow, bwCount, longest, stats, ccCount, bestCb] = await Promise.all([
+    // BLOWOUTS — the player's most lopsided WIN (Blowouts board order, as winner)
+    query<MpProfileMatch>(
+      `SELECT ${cols} FROM matches m JOIN match_scores ms ON m.match_id = ms.match_id
+        WHERE m.player_id = ${pid} AND m.won AND ms.is_completed
+          AND m.competition_type = 'Tour'
+        ORDER BY ms.games_won_loser ASC, ms.sets_won_winner DESC,
+                 m.opp_rank ASC NULLS LAST, ms.games_won_winner ASC,
+                 m.tourney_date DESC, m.match_id LIMIT 1`),
+    // count of the player's tour wins that are blowouts (<= 3 games dropped)
+    query<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM matches m JOIN match_scores ms ON m.match_id = ms.match_id
+        WHERE m.player_id = ${pid} AND m.won AND ms.is_completed
+          AND m.competition_type = 'Tour' AND ms.games_won_loser <= 3`),
+    // MARATHONS — longest match the player was in (Marathons board rules)
+    query<MpProfileMatch>(
+      `SELECT ${cols} FROM matches m JOIN match_scores ms ON m.match_id = ms.match_id
+         JOIN mp_match_facts mf ON m.match_id = mf.match_id
+        WHERE (m.player_id = ${pid} OR m.opp_id = ${pid}) AND m.won
+          AND ms.is_completed AND mf.minutes_plausible AND m.competition_type = 'Tour'
+        ORDER BY m.minutes DESC, m.match_id LIMIT 1`),
+    // TIEBREAKS + RETIREMENTS — the gated tour columns the boards read
+    query<{ played: number; won: number; retired: number; wins_by_retirement: number }>(
+      `SELECT tiebreaks_played_tour AS played, tiebreaks_won_tour AS won,
+              retired, wins_by_retirement FROM mp_player_stats WHERE player_id = ${pid}`),
+    // COMEBACKS — count of the player's tour two-sets-down wins
+    query<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM matches m JOIN mp_match_facts mf ON m.match_id = mf.match_id
+        WHERE m.player_id = ${pid} AND m.won AND mf.is_comeback AND m.competition_type = 'Tour'`),
+    // best comeback by the rank of the opponent fought past (Comebacks board order)
+    query<MpProfileMatch>(
+      `SELECT ${cols} FROM matches m JOIN match_scores ms ON m.match_id = ms.match_id
+         JOIN mp_match_facts mf ON m.match_id = mf.match_id
+        WHERE m.player_id = ${pid} AND m.won AND mf.is_comeback AND m.competition_type = 'Tour'
+        ORDER BY m.opp_rank ASC NULLS LAST, m.tourney_date DESC, m.match_id LIMIT 1`),
+  ]);
+  const s = stats[0] ?? { played: 0, won: 0, retired: 0, wins_by_retirement: 0 };
+  const played = Number(s.played) || 0;
+  const won = Number(s.won) || 0;
+  return {
+    blowout_wins: Number(bwCount[0]?.n ?? 0),
+    top_blowout: topBlow[0] ?? null,
+    longest: longest[0] ?? null,
+    tb_played: played,
+    tb_won: won,
+    tb_rate: played > 0 ? won / played : null,
+    tb_qualifies: played >= TB_RATE_FLOOR,
+    comeback_count: Number(ccCount[0]?.n ?? 0),
+    best_comeback: bestCb[0] ?? null,
+    retired: Number(s.retired) || 0,
+    wins_by_retirement: Number(s.wins_by_retirement) || 0,
+  };
 }
 
 // Per-surface breakdown of one directed rivalry (their actual meetings).
