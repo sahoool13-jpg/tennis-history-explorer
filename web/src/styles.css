@@ -22,9 +22,14 @@
   --line: #dce0e6;         /* cool hairline */
   --line-soft: #e8ebef;
 
-  /* per-section identity accent (set per player from primary_surface). Base is
-     the single decisive editorial accent, used sparingly for links/active/focus. */
-  --accent: #d6263a;
+  /* tennis-ball optic yellow — the single sharp pop, used sparingly for
+     active/selected states, key highlights, the daily-puzzle action. Pure
+     optic yellow fails text contrast on light, so --accent-strong (same hue,
+     darker) carries hovered link text / focus rings. NOT two accents — one hue,
+     two tones. (--accent is reassigned to the player's primary surface on
+     player pages; that surface-accent behaviour is preserved.) */
+  --accent: #d4e600;
+  --accent-strong: #5c6a00;
 
   /* type — Archivo Expanded display (restraint), IBM Plex Sans everywhere else */
   --font-display: "Archivo Expanded", "Archivo", system-ui, sans-serif;
@@ -69,10 +74,10 @@ body { margin: 0; background: var(--paper); }
 h1, h2, h3 { font-family: var(--font-head); font-weight: 700; letter-spacing: -0.02em; margin: 0; }
 
 a { color: inherit; text-decoration: none; }
-a:hover { color: var(--accent); }
+a:hover { color: var(--accent-strong); }
 
 /* visible keyboard focus, in the decisive accent (quality floor) */
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent-strong); outline-offset: 2px; }
 
 .muted { color: var(--ink-soft); }
 .faint { color: var(--ink-faint); }
@@ -142,7 +147,7 @@ a:hover { color: var(--accent); }
 .home__title .c-grass { color: var(--surface-Grass); }
 .home__lede { font-size: 1.08rem; color: var(--ink-soft); max-width: 46ch; margin: 0 0 var(--s6); }
 .home__h2h { margin-top: var(--s5); font-size: var(--t-cap); }
-.home__h2h a { border-bottom: 1px solid var(--accent); padding-bottom: 1px; }
+.home__h2h a { border-bottom: 1px solid var(--accent-strong); padding-bottom: 1px; }
 
 /* ----- search box -------------------------------------------------------- */
 .searchbox { position: relative; max-width: 480px; }
@@ -155,7 +160,7 @@ a:hover { color: var(--accent); }
 }
 .searchbox__input::-webkit-search-cancel-button { -webkit-appearance: none; }
 .searchbox__input::placeholder { color: var(--ink-faint); }
-.searchbox__input:focus { outline: none; border-color: var(--accent); }
+.searchbox__input:focus { outline: none; border-color: var(--accent-strong); }
 .searchbox__results {
   list-style: none; margin: var(--s2) 0 0; padding: var(--s1);
   background: var(--paper-raise); border: 1px solid var(--line);
@@ -710,8 +715,13 @@ a:hover { color: var(--accent); }
   background: color-mix(in srgb, var(--c, var(--ink)) 16%, var(--paper));
   border-color: var(--c, var(--ink)); color: var(--ink);
 }
-.mp-chip--era { --c: var(--mp-accent); }
-.mp-chip--team { --c: var(--ink); }
+/* non-surface toggles glow optic-yellow when active; surface chips keep their
+   own surface colour (the colour IS the data). */
+.mp-chip--era { --c: var(--accent-strong); }
+.mp-chip--team { --c: var(--accent-strong); }
+.mp-chip--era.is-on, .mp-chip--team.is-on {
+  background: var(--accent); border-color: var(--accent-strong); color: var(--ink);
+}
 .mp-filter__reset {
   background: none; border: none; cursor: pointer; padding: 6px 4px;
   font-family: var(--font-head); font-weight: 600; font-size: 0.85rem;
@@ -852,3 +862,52 @@ body.landing-mode .sitefoot { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .lp-door, .lp-door__go { transition: none; }
 }
+
+/* ============================================================================
+   TENNIS IDENTITY (layered on the data-journalism reskin)
+   Court-line geometry, a confident-but-secondary surface voice, and one
+   disciplined optic-yellow pop. Signal is geometry + colour + type only —
+   no icons, no decoration. Court strokes stay thin, in the neutral ink.
+   ========================================================================== */
+
+/* 1a — faint top-down court diagram behind the landing masthead (watermark) */
+.lp-masthead { position: relative; }
+.lp-masthead > * { position: relative; z-index: 1; }
+.lp-masthead::before {
+  content: ''; position: absolute; z-index: 0; pointer-events: none;
+  top: -8px; right: -12px; width: min(520px, 70%); height: 280px;
+  opacity: 0.06;
+  background: no-repeat right top / contain
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 180' fill='none' stroke='%2314161a' stroke-width='1.4'%3E%3Crect x='2' y='2' width='316' height='176'/%3E%3Cline x1='2' y1='24' x2='318' y2='24'/%3E%3Cline x1='2' y1='156' x2='318' y2='156'/%3E%3Cline x1='82' y1='24' x2='82' y2='156'/%3E%3Cline x1='238' y1='24' x2='238' y2='156'/%3E%3Cline x1='82' y1='90' x2='238' y2='90'/%3E%3Cline x1='160' y1='2' x2='160' y2='178'/%3E%3C/svg%3E");
+}
+
+/* 1b — court-line dividers: a hairline with a short centred perpendicular tick,
+   echoing the baseline centre mark. Applied to the major section breaks. */
+.lp-masthead, .sitefoot, .mp-subhead, .section-rule { position: relative; }
+.lp-masthead::after,
+.sitefoot::before,
+.mp-subhead::before,
+.section-rule::after {
+  content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+  width: 1px; height: 10px; background: var(--ink-faint);
+}
+.lp-masthead::after { bottom: -5px; }   /* straddles the masthead's bottom rule */
+.sitefoot::before { top: -5px; }         /* straddles the footer's top rule */
+.mp-subhead { border-top: 1px solid var(--line); padding-top: var(--s5); }
+.mp-subhead::before { top: -5px; }
+.section-rule::after { top: -5px; }
+
+/* 2 — surface colour as a recurring secondary voice (middle ground, not flood).
+   Match rows carry a surface-coloured spine; leaderboard cards a surface/identity
+   top rule. The neutral base stays dominant. */
+.mp-match { border-left: 3px solid var(--c, var(--line)); padding-left: var(--s4); }
+.mp-match--norank { padding-left: var(--s4); }
+.lb-card { border-top: 2px solid var(--lb-accent); padding-top: var(--s3); }
+
+/* 3 — optic-yellow pop: the daily-puzzle primary action (one clear highlight).
+   Ink on optic yellow passes contrast comfortably. */
+.pz-share {
+  background: var(--accent); border-color: var(--accent-strong); color: var(--ink);
+}
+.pz-share:hover { background: var(--accent-strong); color: var(--paper-raise); border-color: var(--accent-strong); }
+@media (prefers-reduced-motion: reduce) { .pz-share { transition: none; } }

@@ -85,6 +85,7 @@ export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
   const el = document.createElement('article');
   el.className = 'mp-match' + (opts.rank === undefined ? ' mp-match--norank' : '');
   const c = surfaceColor(m.surface);
+  el.style.setProperty('--c', c); // surface-coloured spine (border-left)
   const rank = opts.rank !== undefined
     ? `<span class="mp-match__rank tnum">${opts.rank}</span>` : '';
   const badge = opts.badge
