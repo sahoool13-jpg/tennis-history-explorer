@@ -8,6 +8,7 @@ import { renderH2H } from './views/h2h';
 import { renderEras } from './views/eras';
 import { renderRecords } from './views/records';
 import { renderLanding } from './views/landing';
+import { renderAbout } from './views/about';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
@@ -22,11 +23,12 @@ app.innerHTML = `
       <a href="#/h2h">Head to head</a>
       <a href="#/records">Records</a>
       <a href="#/eras">How the game changed</a>
+      <a href="#/about">About</a>
       <a class="topnav__sib" href="${import.meta.env.BASE_URL}matchpoint.html">Match Point&#8201;&#8599;</a>
     </nav>
   </header>
   <main id="content" class="content"></main>
-  <footer class="sitefoot">Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0</footer>
+  <footer class="sitefoot">Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0 · <a href="#/about">About</a></footer>
 `;
 const content = document.querySelector<HTMLElement>('#content')!;
 
@@ -45,6 +47,7 @@ route(/^\/h2h\/(\d+)$/, (p) => { document.body.classList.remove('landing-mode');
 route(/^\/h2h$/, page(() => void renderH2H(content)));
 route(/^\/eras$/, page(() => void renderEras(content)));
 route(/^\/records$/, page(() => void renderRecords(content)));
+route(/^\/about$/, page(() => renderAbout(content)));
 setNotFound(() => {
   document.body.classList.remove('landing-mode');
   content.innerHTML = `<p class="muted">Page not found. <a href="#/">Back to the front page</a>.</p>`;

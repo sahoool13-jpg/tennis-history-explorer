@@ -75,6 +75,7 @@ export async function renderLanding(mount: HTMLElement): Promise<void> {
   foot.className = 'sitefoot lp-foot';
   foot.innerHTML = `<strong>Unforced Error</strong> — Rally &amp; Match Point ·
     Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0 ·
+    <a href="#/about">About &amp; limitations</a> ·
     “On this day” and the daily puzzle read only recorded tour-level matches, 2000–present.`;
   mount.appendChild(foot);
 }

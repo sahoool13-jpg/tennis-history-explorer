@@ -1003,3 +1003,49 @@ body.landing-mode .sitefoot { display: none; }
 }
 .pz-share:hover { background: var(--accent-strong); color: var(--paper-raise); border-color: var(--accent-strong); }
 @media (prefers-reduced-motion: reduce) { .pz-share { transition: none; } }
+
+/* ----- About — editorial long-form, the honesty page -------------------- */
+.about { max-width: 64ch; }
+.about-head { margin-bottom: var(--s2); }
+.about-title { font-family: var(--font-display); font-size: var(--t-h1); margin: var(--s2) 0 var(--s4); }
+.about-lede { font-size: 1.18rem; line-height: 1.5; color: var(--ink-soft); margin: 0; }
+.about-sec { margin: 0; }
+.about-h2 { font-family: var(--font-head); font-size: var(--t-h2); margin: 0 0 var(--s4); }
+.about p { margin: 0 0 var(--s4); line-height: 1.65; }
+.about p:last-child { margin-bottom: 0; }
+.about-sec a { color: var(--accent-strong); border-bottom: 1px solid var(--line); }
+.about-sec a:hover { border-color: var(--accent-strong); }
+.about code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.88em; background: var(--line-soft); padding: 0.05em 0.35em; border-radius: var(--radius);
+}
+
+/* the surface thesis — coloured swatch + name + gloss */
+.about-surfaces { list-style: none; margin: 0 0 var(--s4); padding: 0; display: grid; gap: var(--s3); }
+.about-surface {
+  display: grid; grid-template-columns: auto auto 1fr; align-items: baseline;
+  gap: 0 var(--s3); line-height: 1.5;
+}
+.about-surface .swatch { align-self: center; }
+.about-surface__name { font-family: var(--font-head); font-weight: 700; }
+.about-surface__gloss { font-size: 0.96rem; }
+
+/* coverage / caveat lists */
+.about-list { margin: 0; padding-left: 1.15em; display: grid; gap: var(--s3); }
+.about-list li { line-height: 1.6; }
+.about-list--caveats { list-style: none; padding-left: 0; }
+.about-list--caveats li {
+  padding-left: var(--s4); border-left: 2px solid var(--line);
+}
+.about-list--caveats li strong { color: var(--ink); }
+
+.about-foot {
+  margin-top: var(--s7); padding-top: var(--s4);
+  border-top: 1px solid var(--line); text-align: left;
+}
+
+@media (max-width: 560px) {
+  .about-surface { grid-template-columns: auto 1fr; }
+  .about-surface__gloss { grid-column: 1 / -1; padding-left: calc(12px + var(--s3)); }
+  .about-lede { font-size: 1.05rem; }
+}
