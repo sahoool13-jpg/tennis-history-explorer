@@ -4,14 +4,16 @@
 // filter; career player boards filter by player name. All integrity gates live
 // in the db.ts base queries — filters only narrow them.
 import {
-  mpBagelsDished, mpBreadsticksDished, mpTiebreaksPlayed, mpTiebreakRate,
+  mpBagelsDished, mpBreadsticksDished, mpTiebreakStats,
   mpMostRetired, mpWonByRetirement, mpLengthBySurface, mpLengthHistogram,
 } from './db';
 import { mpHeader, mpTakeaway, loadingLine, fmtDuration, errorCard } from './mpkit';
 import { matchExplorer, playerExplorer } from './mpexplore';
 import type { PlayerBoardSpec } from './mpexplore';
 import { surfaceColor } from './palette';
-import type { MpPlayerRow, MpLengthBucket, MpSurfaceLength } from './types';
+import type {
+  MpPlayerRow, MpLengthBucket, MpSurfaceLength, MpPlayerPage, TiebreakStatRow,
+} from './types';
 
 // floors, declared once so the UI copy and the query stay in lockstep
 const FLOOR_BAGEL = 50;
@@ -59,14 +61,18 @@ export function renderMarathons(mount: HTMLElement): Promise<void> {
   mount.replaceChildren();
   mount.style.removeProperty('--accent');
   mount.appendChild(mpHeader('Marathons',
-    'The longest matches by playing time. Minutes-based: duration depends on '
-    + 'times being recorded, and implausible durations are filtered out — so '
-    + 'a filtered list is still "longest recorded, plausible only." '
-    + 'Search or filter by surface or era; the list re-ranks by minutes.'));
+    'Tour-level matches, longest by playing time first. Minutes-based: duration '
+    + 'depends on times being recorded, and implausible durations are filtered '
+    + 'out — a filtered list is still "longest recorded, plausible only." The '
+    + 'opponent rank is shown for context but never changes the order — minutes '
+    + 'is the metric. Davis Cup / Olympics are hidden by default; add them with '
+    + 'the toggle.'));
   mount.appendChild(mpTakeaway('The five-set marathons live at the top — almost all on the slow stuff or the grass.'));
   mount.appendChild(matchExplorer({
     board: 'marathons',
     badge: (m) => fmtDuration(m.minutes),
+    showLoserRank: true,
+    teamToggle: true,
     emptyHint: 'No timed matches found for that filter — try widening it.',
   }));
 
@@ -92,16 +98,48 @@ export function renderTiebreaks(mount: HTMLElement): Promise<void> {
   mount.replaceChildren();
   mount.style.removeProperty('--accent');
   mount.appendChild(mpHeader('Tiebreaks',
-    'Who lives in the tiebreak, and who wins it. Win rate applies a minimum so '
-    + 'a few good breakers can’t top a career of them. Search by player to find '
-    + 'anyone; the boards re-rank within your search.'));
+    'Who lives in the tiebreak, and who wins it. Counts tour-level matches by '
+    + 'default (so Davis Cup tiebreaks don’t pad the totals) — add team events '
+    + 'with the toggle. Win rate applies a minimum so a few good breakers can’t '
+    + 'top a career of them. Search by player to find anyone.'));
   mount.appendChild(mpTakeaway('The biggest servers play the most tiebreaks — but the best win rates belong to the all-court greats.'));
+  // One JSON pass over the match level, cached; the boards filter/slice it.
+  const statsP = mpTiebreakStats();
+  const played = (r: TiebreakStatRow, team: boolean) => team ? r.played_all : r.played_tour;
+  const won = (r: TiebreakStatRow, team: boolean) => team ? r.won_all : r.won_tour;
+  const matches = (r: TiebreakStatRow, team: boolean) => team ? r.matches_all : r.matches_tour;
+
+  function page(
+    rows: TiebreakStatRow[], metric: 'played' | 'rate',
+    floor: number, limit: number, q?: string, team = false,
+  ): MpPlayerPage {
+    const ql = (q ?? '').trim().toLowerCase();
+    let elig = rows.filter((r) => metric === 'played'
+      ? matches(r, team) >= floor && played(r, team) > 0
+      : played(r, team) >= floor);
+    if (ql) elig = elig.filter((r) => r.player_name.toLowerCase().includes(ql));
+    elig.sort((a, b) => metric === 'played'
+      ? played(b, team) - played(a, team)
+      : won(b, team) / played(b, team) - won(a, team) / played(a, team));
+    const out: MpPlayerRow[] = elig.slice(0, limit).map((r) => ({
+      player_id: r.player_id, player_name: r.player_name, ioc: r.ioc,
+      matches: matches(r, team),
+      value: metric === 'played' ? played(r, team) : won(r, team) / played(r, team),
+      detail: metric === 'played'
+        ? `${won(r, team)} won`
+        : `${won(r, team)} / ${played(r, team)}`,
+    }));
+    return { rows: out, total: elig.length };
+  }
+
   mount.appendChild(playerExplorer([
     { title: 'Most tiebreaks played', caption: `Set tiebreaks · min ${FLOOR_TB} matches`,
-      fetch: (n, q) => mpTiebreaksPlayed(FLOOR_TB, n, q), fmt: intFmt },
+      fetch: (n, q, team) => statsP.then((rows) => page(rows, 'played', FLOOR_TB, n, q, team)),
+      fmt: intFmt },
     { title: 'Best tiebreak win rate', caption: `min ${FLOOR_TB_RATE} tiebreaks played`,
-      fetch: (n, q) => mpTiebreakRate(FLOOR_TB_RATE, n, q), fmt: pctFmt },
-  ]));
+      fetch: (n, q, team) => statsP.then((rows) => page(rows, 'rate', FLOOR_TB_RATE, n, q, team)),
+      fmt: pctFmt },
+  ], { teamToggle: true }));
   return Promise.resolve();
 }
 
@@ -111,11 +149,15 @@ export function renderComebacks(mount: HTMLElement): Promise<void> {
   mount.style.removeProperty('--accent');
   mount.appendChild(mpHeader('Comebacks',
     'Best-of-five matches won after losing the first two sets — tennis’s '
-    + 'deepest holes, climbed out of. Completed matches only. Search a player '
-    + 'or tournament, or filter by surface or era.'));
-  mount.appendChild(mpTakeaway('Two sets to love down, and still won in five. Most recent first.'));
+    + 'deepest holes, climbed out of. Completed matches only, ordered by the '
+    + 'quality of the opponent fought past (a comeback over a top seed ranks '
+    + 'highest); recency breaks ties. Tour-level by default — add Davis Cup / '
+    + 'Olympics with the toggle.'));
+  mount.appendChild(mpTakeaway('Two sets to love down — and the bigger the name you beat, the higher it ranks.'));
   mount.appendChild(matchExplorer({
     board: 'comebacks',
+    showLoserRank: true,
+    teamToggle: true,
     emptyHint: 'No comebacks found for that filter — try widening it.',
   }));
   return Promise.resolve();

@@ -204,20 +204,24 @@ export function matchExplorer(opts: MatchExplorerOpts): HTMLElement {
   return wrap;
 }
 
-// ---- career player boards (search by name) ---------------------------------
+// ---- career player boards (search by name, optional team-events toggle) ----
 export interface PlayerBoardSpec {
   title: string;
   caption: string;
-  fetch: (limit: number, q?: string) => Promise<MpPlayerPage>;
+  fetch: (limit: number, q?: string, includeTeam?: boolean) => Promise<MpPlayerPage>;
   fmt: (r: MpPlayerRow) => string;
 }
 
+export interface PlayerExplorerOpts { placeholder?: string; teamToggle?: boolean; }
+
 export function playerExplorer(
-  boards: PlayerBoardSpec[], placeholder = 'Search player…',
+  boards: PlayerBoardSpec[], opts: PlayerExplorerOpts = {},
 ): HTMLElement {
+  const placeholder = opts.placeholder ?? 'Search player…';
   const wrap = document.createElement('div');
   wrap.className = 'mp-explore';
   let q = '';
+  let includeTeam = false;
   const depths = boards.map(() => DEFAULT_DEPTH);
   const reqIds = boards.map(() => 0);
 
@@ -228,12 +232,33 @@ export function playerExplorer(
   search.className = 'searchbox__input mp-filter__search';
   search.placeholder = placeholder;
   search.setAttribute('aria-label', placeholder);
+
+  let teamBtn: HTMLButtonElement | null = null;
+  if (opts.teamToggle) {
+    teamBtn = document.createElement('button');
+    teamBtn.type = 'button';
+    teamBtn.className = 'mp-chip mp-chip--team';
+    teamBtn.textContent = '+ Davis Cup & Olympics';
+    teamBtn.setAttribute('aria-pressed', 'false');
+    teamBtn.addEventListener('click', () => {
+      includeTeam = !includeTeam;
+      teamBtn!.classList.toggle('is-on', includeTeam);
+      teamBtn!.setAttribute('aria-pressed', String(includeTeam));
+      reset.hidden = q.trim() === '' && !includeTeam;
+      depths.forEach((_, i) => { depths[i] = DEFAULT_DEPTH; });
+      refreshAll();
+    });
+  }
+
   const reset = document.createElement('button');
   reset.type = 'button';
   reset.className = 'mp-filter__reset';
   reset.textContent = 'Reset';
   reset.hidden = true;
-  bar.append(search, reset);
+  const controls = document.createElement('div');
+  controls.className = 'mp-chips';
+  if (teamBtn) controls.appendChild(teamBtn);
+  bar.append(search, controls, reset);
 
   const grid = document.createElement('div');
   grid.className = 'records-grid';
@@ -250,26 +275,28 @@ export function playerExplorer(
     const spec = boards[i];
     let page: MpPlayerPage;
     try {
-      page = await spec.fetch(depths[i], q);
+      page = await spec.fetch(depths[i], q, includeTeam);
     } catch (err) {
       console.error(`Match Point board "${spec.title}" failed —`, err);
       if (id === reqIds[i]) slots[i].replaceChildren(buildErrorCard(spec.title, spec.caption));
       return;
     }
     if (id !== reqIds[i]) return;
-    slots[i].replaceChildren(buildPlayerCard(spec, page, depths[i], q.trim() !== '',
+    slots[i].replaceChildren(buildPlayerCard(spec, page, depths[i],
+      q.trim() !== '' || includeTeam,
       () => { depths[i] = MAX_DEPTH; void refreshOne(i); }));
   }
 
   const refreshAll = () => boards.forEach((_, i) => { void refreshOne(i); });
   const runSearch = debounce(() => {
-    q = search.value; reset.hidden = q.trim() === '';
+    q = search.value; reset.hidden = q.trim() === '' && !includeTeam;
     depths.forEach((_, i) => { depths[i] = DEFAULT_DEPTH; });
     refreshAll();
   });
   search.addEventListener('input', runSearch);
   reset.addEventListener('click', () => {
-    q = ''; search.value = ''; reset.hidden = true;
+    q = ''; search.value = ''; includeTeam = false; reset.hidden = true;
+    if (teamBtn) { teamBtn.classList.remove('is-on'); teamBtn.setAttribute('aria-pressed', 'false'); }
     depths.forEach((_, i) => { depths[i] = DEFAULT_DEPTH; });
     refreshAll();
   });
