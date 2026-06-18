@@ -206,5 +206,6 @@ export interface Meeting {
   level_label: string | null;
   round: string | null;
   score: string | null;
+  minutes: number | null;
   won: boolean; // true => the first (queried) player won
 }

@@ -3,6 +3,7 @@ import { searchBox, escapeHtml } from '../components/searchBox';
 import { surfaceCompare } from '../components/surfaceCompare';
 import { h2hSurfaceBreakdown } from '../components/h2hSurfaceBreakdown';
 import { rivalryTimeline } from '../components/rivalryTimeline';
+import { meetingsList, contextStrip } from '../components/h2hMeetings';
 import { surfaceColor } from '../palette';
 import { navigate } from '../router';
 import type { H2HRow } from '../types';
@@ -119,7 +120,9 @@ export async function renderH2H(
     mount.appendChild(scoreboard(nameA, nameB, h2h, colorA, colorB));
     // hero: the rivalry timeline, first thing after the scoreboard
     mount.appendChild(rivalryTimeline(meetings, nameA, nameB, colorA, colorB));
+    if (meetings.length) mount.appendChild(contextStrip(meetings, nameA, nameB));
     mount.appendChild(h2hSurfaceBreakdown(bySurface, nameA, nameB));
+    if (meetings.length) mount.appendChild(meetingsList(meetings, idA, idB, nameA, nameB));
   }
 
   mount.appendChild(surfaceCompare(splitsA, splitsB, nameA, nameB));

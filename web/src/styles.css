@@ -311,6 +311,21 @@ a:hover { color: var(--accent-strong); }
 .h2h-meta { text-align: center; font-size: var(--t-cap); color: var(--ink-faint); margin: 0 0 var(--s7); }
 .h2h-none { text-align: center; font-size: 1.05rem; color: var(--ink-soft); padding: var(--s6) 0; }
 
+/* ----- h2h context strip (honest rivalry facts) -------------------------- */
+.h2h-context { border-top: 1px solid var(--line); padding-top: var(--s5); }
+.h2h-context__grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--s5) var(--s4);
+}
+.h2h-fact { display: flex; flex-direction: column; gap: 3px; border-left: 2px solid var(--line); padding-left: var(--s3); }
+.h2h-fact__label { font-family: var(--font-head); font-size: var(--t-eyebrow); font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); }
+.h2h-fact__value { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.h2h-fact__sub { font-size: var(--t-cap); }
+
+/* ----- h2h full meetings list -------------------------------------------- */
+.h2h-meetings { margin-top: var(--s5); }
+.h2h-meetings .eyebrow { margin-bottom: var(--s4); }
+
 /* shared-axis surface comparison */
 .compare__grid { display: flex; flex-direction: column; gap: var(--s6); }
 .crow { --c: var(--surface-Unknown); }

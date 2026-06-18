@@ -155,7 +155,7 @@ export function getMeetings(
 ): Promise<Meeting[]> {
   return query<Meeting>(
     `SELECT CAST(tourney_date AS VARCHAR) AS date, tourney_name, surface,
-            tourney_level, level_label, round, score, won
+            tourney_level, level_label, round, score, minutes, won
        FROM matches
       WHERE player_id = ${intId(id1)} AND opp_id = ${intId(id2)}
       ORDER BY tourney_date, match_id`,
