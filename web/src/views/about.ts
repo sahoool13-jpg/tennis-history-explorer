@@ -144,9 +144,12 @@ export function renderAbout(mount: HTMLElement): void {
       <p>That data is used under
         <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener"
         target="_blank">Creative Commons BY-NC-SA 4.0</a>: attributed to its author,
-        <strong>non-commercial</strong>, and shared under the same licence. Unforced
-        Error is an independent, non-commercial project and is not affiliated with the
-        ATP or with Jeff Sackmann.</p>
+        <strong>non-commercial</strong> (no ads, no monetization), and shared under the
+        same licence — including the processed data and everything derived from it.
+        Unforced Error is an independent, non-commercial project and is not affiliated
+        with the ATP or with Jeff Sackmann.</p>
+      <p>The application code, visual design, and puzzle are <strong>© 2026 Hysplex</strong>,
+        all rights reserved — separate from, and not covered by, the data licence above.</p>
     </section>
 
     <footer class="sitefoot about-foot">Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0</footer>

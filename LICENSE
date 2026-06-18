@@ -1,0 +1,65 @@
+Unforced Error — Licensing & Copyright
+======================================
+
+This project combines two separately-licensed bodies of work: third-party DATA,
+and original CODE & DESIGN. The terms for each are set out below and are meant to
+be read together.
+
+Unforced Error (unforcederror.app) is a free, non-commercial project: it carries
+no advertising and no monetization of any kind, in compliance with the
+NonCommercial term of the data license in section 1.
+
+
+--------------------------------------------------------------------------------
+1. DATA  —  Creative Commons BY-NC-SA 4.0
+--------------------------------------------------------------------------------
+
+All tennis data in this project comes from Jeff Sackmann's `tennis_atp` dataset:
+
+    https://github.com/JeffSackmann/tennis_atp
+
+That dataset is licensed by its author under the Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0):
+
+    https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+Under that license, this project honours all three terms:
+
+  - Attribution    Jeff Sackmann is credited as the source of the data — here,
+                   in the site footer, and on the About page.
+  - NonCommercial  The data is used for no commercial purpose: no ads, no paid
+                   features, no monetization.
+  - ShareAlike     The processed data and any work derived from it — the built
+                   Parquet artifacts, the computed aggregates, and the figures,
+                   leaderboards, and rankings drawn from them — are distributed
+                   under the same CC BY-NC-SA 4.0 license, with attribution to
+                   Jeff Sackmann.
+
+This project is not affiliated with or endorsed by Jeff Sackmann, the ATP, or any
+tennis governing body. Please support his work: https://www.tennisabstract.com/
+
+
+--------------------------------------------------------------------------------
+2. CODE & DESIGN  —  © 2026 Hysplex
+--------------------------------------------------------------------------------
+
+Copyright © 2026 Hysplex. All rights reserved.
+
+The original application code, the visual design and typography system, the daily
+puzzle logic, and the UI components written for this project are the independent
+work and copyright of Hysplex. This copyright is separate from, and does not
+extend to, the underlying data described in section 1.
+
+The code and design are NOT covered by the CC BY-NC-SA 4.0 data license, and that
+license does not grant any rights to them. No license to reuse the code or design
+is granted by this file; please contact the author for permission.
+
+
+--------------------------------------------------------------------------------
+Summary
+--------------------------------------------------------------------------------
+
+  Data          Jeff Sackmann's tennis_atp — CC BY-NC-SA 4.0 (attribution,
+                non-commercial, share-alike). Derivations share that license.
+  Code & Design © 2026 Hysplex, all rights reserved. Not under the data license.
+  The project   Free and non-commercial — no ads, no monetization.

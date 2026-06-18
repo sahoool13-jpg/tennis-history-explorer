@@ -28,7 +28,7 @@ app.innerHTML = `
     </nav>
   </header>
   <main id="content" class="content"></main>
-  <footer class="sitefoot">Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0 · <a href="#/about">About</a></footer>
+  <footer class="sitefoot">Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0 · © 2026 Hysplex · <a href="#/about">About</a></footer>
 `;
 const content = document.querySelector<HTMLElement>('#content')!;
 

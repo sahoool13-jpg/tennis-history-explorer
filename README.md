@@ -72,11 +72,22 @@ tennis-history-explorer/
    # see web/
    ```
 
-## Data & attribution
+## License
 
-All tennis data is © Jeff Sackmann and released under CC BY-NC-SA 4.0. See
-[ATTRIBUTION.md](ATTRIBUTION.md) for full credit and license details. The raw
-data is never committed; only the built Parquet artifact under `data/built/` is.
+This project combines third-party **data** with original **code & design** under
+separate terms — see [LICENSE](LICENSE) for the full text.
+
+- **Data** — Jeff Sackmann's [`tennis_atp`](https://github.com/JeffSackmann/tennis_atp)
+  dataset, licensed **CC BY-NC-SA 4.0**. Credited to Jeff Sackmann, used
+  non-commercially, and the processed data plus everything derived from it
+  (aggregates, figures, rankings) is shared under the same license. See also
+  [ATTRIBUTION.md](ATTRIBUTION.md). The raw data is never committed; only the
+  built Parquet artifact under `data/built/` is.
+- **Code & design** — the application code, visual design, puzzle logic, and
+  components are **© 2026 Hysplex**, all rights reserved, and are not covered by
+  the data license.
+
+**Unforced Error** is a free, non-commercial project: no ads, no monetization.
 
 ## Status
 

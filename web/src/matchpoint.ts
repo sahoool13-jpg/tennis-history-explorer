@@ -44,7 +44,7 @@ app.innerHTML = `
   </header>
   <main id="content" class="content"></main>
   <footer class="sitefoot">
-    Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0 ·
+    Data by Jeff Sackmann · ATP singles · CC BY-NC-SA 4.0 · © 2026 Hysplex ·
     <a class="mp-foot-link" href="${RALLY_URL}#/about">About &amp; limitations</a> ·
     <a class="mp-foot-link" href="${RALLY_URL}">Rally — tennis history, by surface &#8599;</a>
   </footer>
