@@ -37,12 +37,18 @@ interface Cell { label: string; status: Status; arrow?: '▲' | '▼'; }
 const EMOJI: Record<Status, string> = { hit: '🟩', near: '🟨', miss: '⬛' };
 const COLS = ['Country', 'Hand', 'Debut', 'Peak', 'Titles'] as const;
 
+// Numeric comparison cell. The status (hit/near/miss) is the comparison logic and
+// is identical for every numeric attribute. `invertArrow` only flips the DISPLAYED
+// direction — used for peak ranking, where a smaller number is the better rank, so
+// "▲" should mean "a better ranking (closer to #1)" rather than "a higher number".
 function numCell(label: string, mine: number | null, target: number | null,
-                 nearWithin: number): Cell {
+                 nearWithin: number, invertArrow = false): Cell {
   if (mine == null || target == null) return { label: '—', status: 'miss' };
   const d = target - mine;
   const status: Status = d === 0 ? 'hit' : Math.abs(d) <= nearWithin ? 'near' : 'miss';
-  const arrow = d === 0 ? undefined : d > 0 ? '▲' : '▼';
+  let dir = d > 0 ? 1 : d < 0 ? -1 : 0;
+  if (invertArrow) dir = -dir;
+  const arrow = dir > 0 ? '▲' : dir < 0 ? '▼' : undefined;
   return { label, status, arrow };
 }
 
@@ -57,9 +63,10 @@ function compare(guess: PuzzlePlayer, target: PuzzlePlayer): Cell[] {
   };
   const debut = numCell(String(guess.debut_year ?? '—'),
     guess.debut_year, target.debut_year, 3);
-  // peak rank: a higher NUMBER is a worse peak; arrow points toward the answer
+  // peak rank: a smaller NUMBER is a better peak, so flip the arrow — "▲" means the
+  // answer is a BETTER ranking (closer to #1). Status logic is unchanged.
   const peak = numCell(`#${guess.career_high_rank ?? '—'}`,
-    guess.career_high_rank, target.career_high_rank, 5);
+    guess.career_high_rank, target.career_high_rank, 5, true);
   const titles = numCell(String(guess.titles),
     guess.titles, target.titles, 3);
   return [country, hand, debut, peak, titles];
@@ -67,6 +74,45 @@ function compare(guess: PuzzlePlayer, target: PuzzlePlayer): Cell[] {
 
 const handLabel = (h: string | null): string =>
   h === 'R' ? 'Right' : h === 'L' ? 'Left' : h === 'U' ? 'Unknown' : '—';
+
+// Spoken description of a tile — meaning without relying on colour. Mirrors the
+// arrow convention: numbers say higher/lower; peak ranking says better/worse.
+function cellAria(col: string, c: Cell): string {
+  if (c.status === 'hit') return `${col}: exact match`;
+  const close = c.status === 'near' ? 'close' : 'not close';
+  if (!c.arrow) return `${col}: ${close}, no match`;
+  const dir = col === 'Peak'
+    ? (c.arrow === '▲' ? 'answer is a better ranking, closer to number 1' : 'answer is a worse ranking')
+    : (c.arrow === '▲' ? 'answer is higher' : 'answer is lower');
+  return `${col}: ${close}, ${dir}`;
+}
+
+// Always-visible legend. The thresholds here are TRUE to numCell's nearWithin
+// arguments (debut 3, peak 5, titles 3) and country/hand being exact-only.
+function keyHtml(): string {
+  return `
+    <div class="pz-key" aria-label="How to read each tile">
+      <p class="pz-key__title">Key — how to read each tile</p>
+      <ul class="pz-key__list pz-key__colors">
+        <li><span class="pz-sw pz-sw--hit" aria-hidden="true">✓</span>
+          <span><b>Green</b> — exact match.</span></li>
+        <li><span class="pz-sw pz-sw--near" aria-hidden="true"></span>
+          <span><b>Gold</b> — close: debut <b>within 3 years</b>, peak <b>within 5 spots</b>,
+            titles <b>within 3</b>.</span></li>
+        <li><span class="pz-sw pz-sw--miss" aria-hidden="true"></span>
+          <span><b>Grey</b> — not close. The arrow still points the way.</span></li>
+      </ul>
+      <ul class="pz-key__list pz-key__arrows">
+        <li><span class="pz-arr" aria-hidden="true">▲</span><span class="pz-arr" aria-hidden="true">▼</span>
+          <span><b>Debut &amp; Titles:</b> <b>▲</b> the answer is higher than your guess,
+            <b>▼</b> the answer is lower.</span></li>
+        <li><span class="pz-arr" aria-hidden="true">▲</span><span class="pz-arr" aria-hidden="true">▼</span>
+          <span><b>Peak ranking:</b> <b>▲</b> the answer is a better ranking (closer to #1),
+            <b>▼</b> a worse ranking. A smaller number is better — #1 is the best.</span></li>
+      </ul>
+      <p class="pz-key__note faint">Country and Hand are exact-only — they show green or grey, never gold.</p>
+    </div>`;
+}
 
 // --- puzzle widget ----------------------------------------------------------
 export function renderPuzzle(
@@ -83,9 +129,23 @@ export function renderPuzzle(
   let done = false;
 
   mount.replaceChildren();
+
+  // one-line how-to-play, always at the top
+  const how = document.createElement('p');
+  how.className = 'pz-how';
+  how.innerHTML = 'Guess the mystery player. After each guess, each tile shows how '
+    + 'close you are — <b>green is exact</b>, <b>gold is close</b>, and the arrow '
+    + 'points the way to the answer.';
+  mount.appendChild(how);
+
   const board = document.createElement('div');
   board.className = 'pz-board';
   mount.appendChild(board);
+
+  // always-visible legend, below the grid
+  const key = document.createElement('div');
+  key.innerHTML = keyHtml();
+  mount.appendChild(key.firstElementChild!);
 
   const formWrap = document.createElement('div');
   formWrap.className = 'pz-form';
@@ -96,11 +156,18 @@ export function renderPuzzle(
   mount.appendChild(endWrap);
 
   function rowHtml(g: PuzzlePlayer): string {
-    const cells = compare(g, target).map((c, i) => `
-      <span class="pz-cell pz-cell--${c.status}">
+    const cells = compare(g, target).map((c, i) => {
+      // shape cue carries meaning without colour: ✓ for an exact match, else the
+      // directional arrow (gold = close, grey = not close — both keep the arrow).
+      const mark = c.status === 'hit'
+        ? '<i class="pz-tick" aria-hidden="true">✓</i>'
+        : c.arrow ? `<i class="pz-arr" aria-hidden="true">${c.arrow}</i>` : '';
+      return `
+      <span class="pz-cell pz-cell--${c.status}" role="img" aria-label="${cellAria(COLS[i], c)}">
         <span class="pz-cell__k">${COLS[i]}</span>
-        <span class="pz-cell__v">${escapeHtml(c.label)}${c.arrow ? `<i class="pz-arr">${c.arrow}</i>` : ''}</span>
-      </span>`).join('');
+        <span class="pz-cell__v">${escapeHtml(c.label)}${mark}</span>
+      </span>`;
+    }).join('');
     return `<div class="pz-row"><span class="pz-row__who">${escapeHtml(g.player_name)}</span>
       <span class="pz-row__cells">${cells}</span></div>`;
   }

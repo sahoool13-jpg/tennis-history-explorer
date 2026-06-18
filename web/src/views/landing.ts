@@ -53,8 +53,7 @@ export async function renderLanding(mount: HTMLElement): Promise<void> {
   pz.innerHTML = `
     <p class="eyebrow">The daily · puzzle #${pd.dayNumber}</p>
     <h2 class="lp-h2">Guess the player</h2>
-    <p class="lp-puzzle__sub">Six guesses. Each one shows how close you are on
-      country, hand, debut year, peak ranking and titles. Drawn from
+    <p class="lp-puzzle__sub">Six guesses to find the mystery player. Drawn from
       ${PUZZLE_POOL_NOTE} who reached a ${PUZZLE_FLOOR}. New player every day.</p>
     <div class="lp-puzzle__mount"><p class="loading">Loading today's player…</p></div>`;
   mount.appendChild(pz);
