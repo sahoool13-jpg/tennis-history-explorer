@@ -1,7 +1,7 @@
 // H2H deep-dive pieces: the full chronological meetings list (scoreline-as-hero,
 // reusing the Match Point match card) and a context strip of honest facts. Reads
 // only the meetings already loaded for the pair — no new data.
-import { matchCard, fmtDuration } from '../mpkit';
+import { matchCard, fmtDuration, reveal } from '../mpkit';
 import { escapeHtml } from './searchBox';
 import type { Meeting, MpMatch } from '../types';
 
@@ -47,6 +47,9 @@ export function meetingsList(
     }));
   });
   sec.appendChild(list);
+  // Match cards start at opacity:0 and only become visible once `.in` is added;
+  // without this the whole list renders as a blank gap below the header.
+  reveal(list.querySelectorAll<HTMLElement>('.mp-match'));
   return sec;
 }
 
