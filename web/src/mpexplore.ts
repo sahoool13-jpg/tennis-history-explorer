@@ -62,6 +62,10 @@ export interface MatchExplorerOpts {
   board: MpBoard;
   badge?: (m: MpMatch) => string;
   emptyHint?: string;
+  // show the loser's rank-at-the-time on each row (stakes signal)
+  showLoserRank?: boolean;
+  // offer a toggle to include Davis Cup / Olympics team events (default hidden)
+  teamToggle?: boolean;
 }
 
 export function matchExplorer(opts: MatchExplorerOpts): HTMLElement {
@@ -70,13 +74,15 @@ export function matchExplorer(opts: MatchExplorerOpts): HTMLElement {
   let q = '';
   const surfaces = new Set<string>();
   let era: string | null = null;
+  let includeTeam = false;
   let depth = DEFAULT_DEPTH;
   let reqId = 0;
 
   const results = document.createElement('div');
   results.className = 'mp-explore__results';
 
-  const filtered = () => q.trim() !== '' || surfaces.size > 0 || era !== null;
+  const filtered = () =>
+    q.trim() !== '' || surfaces.size > 0 || era !== null || includeTeam;
 
   // --- filter bar (built once; events mutate state then refresh) ----------
   const bar = document.createElement('div');
@@ -119,21 +125,42 @@ export function matchExplorer(opts: MatchExplorerOpts): HTMLElement {
     eraWrap.appendChild(c);
   });
 
+  // optional Davis Cup / Olympics toggle (kept out of the default tour-level view)
+  let teamBtn: HTMLButtonElement | null = null;
+  if (opts.teamToggle) {
+    teamBtn = document.createElement('button');
+    teamBtn.type = 'button';
+    teamBtn.className = 'mp-chip mp-chip--team';
+    teamBtn.textContent = '+ Davis Cup & Olympics';
+    teamBtn.setAttribute('aria-pressed', 'false');
+    teamBtn.addEventListener('click', () => {
+      includeTeam = !includeTeam;
+      teamBtn!.classList.toggle('is-on', includeTeam);
+      teamBtn!.setAttribute('aria-pressed', String(includeTeam));
+      depth = DEFAULT_DEPTH; refresh();
+    });
+  }
+
   const reset = document.createElement('button');
   reset.type = 'button';
   reset.className = 'mp-filter__reset';
   reset.textContent = 'Reset';
   reset.addEventListener('click', () => {
-    q = ''; search.value = ''; era = null; surfaces.clear(); depth = DEFAULT_DEPTH;
+    q = ''; search.value = ''; era = null; surfaces.clear();
+    includeTeam = false; depth = DEFAULT_DEPTH;
     surfWrap.querySelectorAll('.mp-chip').forEach((b) => b.classList.remove('is-on'));
     eraWrap.querySelectorAll('.mp-chip').forEach((b) => b.classList.remove('is-on'));
+    if (teamBtn) { teamBtn.classList.remove('is-on'); teamBtn.setAttribute('aria-pressed', 'false'); }
     refresh();
   });
 
   const runSearch = debounce(() => { q = search.value; depth = DEFAULT_DEPTH; refresh(); });
   search.addEventListener('input', runSearch);
 
-  bar.append(search, surfWrap, eraWrap, reset);
+  const controls = document.createElement('div');
+  controls.className = 'mp-chips';
+  if (teamBtn) controls.appendChild(teamBtn);
+  bar.append(search, surfWrap, eraWrap, controls, reset);
   wrap.append(bar, results);
 
   async function refresh(): Promise<void> {
@@ -141,7 +168,8 @@ export function matchExplorer(opts: MatchExplorerOpts): HTMLElement {
     reset.hidden = !filtered();
     let page;
     try {
-      page = await mpMatchBoard(opts.board, { q, surfaces: [...surfaces], era }, depth);
+      page = await mpMatchBoard(opts.board, { q, surfaces: [...surfaces], era }, depth,
+        { includeTeamEvents: includeTeam });
     } catch (err) {
       console.error('Match Point filter query failed —', err);
       if (id === reqId) results.replaceChildren(emptyState('Couldn’t run that filter. Try again.'));
@@ -156,7 +184,11 @@ export function matchExplorer(opts: MatchExplorerOpts): HTMLElement {
     const list = document.createElement('div');
     list.className = 'mp-matchlist';
     page.rows.forEach((m, i) => list.appendChild(
-      matchCard(m, { rank: i + 1, badge: opts.badge ? opts.badge(m) : undefined })));
+      matchCard(m, {
+        rank: i + 1,
+        badge: opts.badge ? opts.badge(m) : undefined,
+        showLoserRank: opts.showLoserRank,
+      })));
     results.appendChild(list);
     const foot = resultFoot(page.rows.length, page.total, depth, filtered(),
       () => { depth = MAX_DEPTH; refresh(); });

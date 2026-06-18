@@ -104,6 +104,7 @@ export interface MpMatch {
   level_label: string | null;
   best_of: number | null;
   minutes: number | null;
+  loser_rank: number | null;   // loser's ATP rank at match time (stakes signal)
   games_won_winner: number | null;
   games_won_loser: number | null;
   sets_won_winner: number | null;

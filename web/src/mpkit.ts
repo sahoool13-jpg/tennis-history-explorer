@@ -77,6 +77,8 @@ export interface MatchCardOpts {
   badge?: string;
   // show just the year in the meta line instead of the full date (almanac use)
   yearOnly?: boolean;
+  // show the loser's rank-at-the-time after their name, e.g. "def. Berdych (#8)"
+  showLoserRank?: boolean;
 }
 
 export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
@@ -90,6 +92,8 @@ export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
   const when = opts.yearOnly ? (m.date || '').slice(0, 4) : fmtDate(m.date);
   const where = [m.tourney_name, m.round && roundLabel(m.round)]
     .filter(Boolean).map((s) => escapeHtml(String(s))).join(' · ');
+  const loserRank = opts.showLoserRank && m.loser_rank != null
+    ? ` <span class="mp-match__seed tnum">#${m.loser_rank}</span>` : '';
   el.innerHTML = `
     ${rank}
     <div class="mp-match__body">
@@ -97,7 +101,7 @@ export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
       <p class="mp-match__players">
         <a href="${rallyPlayer(m.winner_id)}">${escapeHtml(m.winner_name)}</a>
         <span class="mp-match__beat">def.</span>
-        <a href="${rallyPlayer(m.loser_id)}">${escapeHtml(m.loser_name)}</a>
+        <a href="${rallyPlayer(m.loser_id)}">${escapeHtml(m.loser_name)}</a>${loserRank}
       </p>
       <p class="mp-match__meta">
         <span class="mp-dot" style="--c:${c}"></span>${escapeHtml(m.surface)}

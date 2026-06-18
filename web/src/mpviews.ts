@@ -33,13 +33,16 @@ export function renderBlowouts(mount: HTMLElement): Promise<void> {
   mount.replaceChildren();
   mount.style.removeProperty('--accent');
   mount.appendChild(mpHeader('Blowouts',
-    'The most lopsided matches on tour, and the players who hand out the '
-    + 'shutouts. Completed matches only — a retirement is never a blowout. '
-    + 'Search, filter by surface or era, and the ranking follows.'));
-  mount.appendChild(mpTakeaway('Fewest games dropped: a clean double bagel concedes nothing at all.'));
+    'Tour-level blowouts, most lopsided first — ties broken by the quality of '
+    + 'the player on the wrong end, so a top-20 getting bageled outranks a '
+    + 'no-name. Completed matches only; a retirement is never a blowout. Davis '
+    + 'Cup and Olympic ties are hidden by default — add them with the toggle.'));
+  mount.appendChild(mpTakeaway('Fewest games dropped — and the bigger the name bageled, the higher it ranks.'));
   mount.appendChild(matchExplorer({
     board: 'blowouts',
     badge: (m) => `${m.games_won_loser} games dropped`,
+    showLoserRank: true,
+    teamToggle: true,
   }));
   mount.appendChild(subhead('Who dishes them out', 'Bagels & breadsticks'));
   mount.appendChild(playerExplorer([

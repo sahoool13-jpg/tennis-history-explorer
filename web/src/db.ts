@@ -223,7 +223,7 @@ const MP_MATCH_COLS = `
   m.tourney_name AS tourney_name, m.surface AS surface,
   CAST(m.tourney_date AS VARCHAR) AS date,
   m.round AS round, m.level_label AS level_label, m.best_of AS best_of,
-  m.minutes AS minutes,
+  m.minutes AS minutes, m.opp_rank AS loser_rank,
   ms.games_won_winner AS games_won_winner, ms.games_won_loser AS games_won_loser,
   ms.sets_won_winner AS sets_won_winner, ms.sets_won_loser AS sets_won_loser`;
 
@@ -234,12 +234,28 @@ const MP_MATCH_COLS = `
 // never become a backdoor around those gates.
 export type MpBoard = 'blowouts' | 'marathons' | 'comebacks';
 
-const BOARD_SQL: Record<MpBoard, { joins: string; where: string; order: string }> = {
+interface BoardDef {
+  joins: string;
+  where: string;
+  order: string;
+  // when true, the DEFAULT view restricts to tour-level events (G/M/A/F);
+  // Davis Cup (D) / Olympics (O) team ties are default-hidden but reachable
+  // via the includeTeamEvents toggle.
+  tourDefault?: boolean;
+}
+
+const BOARD_SQL: Record<MpBoard, BoardDef> = {
   blowouts: {
     joins: '',
     where: 'm.won AND ms.is_completed',
+    // Most lopsided first; ties broken by the QUALITY of the player on the wrong
+    // end (better rank = lower number sorts first), so "bageled a top-20" beats
+    // "bageled #600" and you never get a wall of identical unknowns. Unranked
+    // losers sort last.
     order: 'ms.games_won_loser ASC, ms.sets_won_winner DESC, '
-         + 'ms.games_won_winner ASC, m.tourney_date DESC, m.match_id',
+         + 'm.opp_rank ASC NULLS LAST, ms.games_won_winner ASC, '
+         + 'm.tourney_date DESC, m.match_id',
+    tourDefault: true,
   },
   marathons: {
     joins: 'JOIN mp_match_facts mf ON m.match_id = mf.match_id',
@@ -279,14 +295,19 @@ function filterClauses(f: MpFilter): string {
   return out.length ? ' AND ' + out.join(' AND ') : '';
 }
 
+export interface MpBoardOpts { includeTeamEvents?: boolean }
+
 // Returns the top `limit` rows for a board under the filter, plus the full
-// matching count (for "showing top N of M").
+// matching count (for "showing top N of M"). For tour-default boards, team
+// events (Davis Cup / Olympics) are excluded unless includeTeamEvents is set.
 export async function mpMatchBoard(
-  board: MpBoard, filter: MpFilter, limit: number,
+  board: MpBoard, filter: MpFilter, limit: number, opts: MpBoardOpts = {},
 ): Promise<MpMatchPage> {
   const b = BOARD_SQL[board];
   const from = `FROM matches m JOIN match_scores ms ON m.match_id = ms.match_id ${b.joins}`;
-  const where = `${b.where}${filterClauses(filter)}`;
+  const tour = b.tourDefault && !opts.includeTeamEvents
+    ? " AND m.competition_type = 'Tour'" : '';
+  const where = `${b.where}${tour}${filterClauses(filter)}`;
   const lim = Math.max(1, Math.min(200, limit | 0));
   const [rows, counted] = await Promise.all([
     query<MpMatch>(`SELECT ${MP_MATCH_COLS} ${from} WHERE ${where} `
