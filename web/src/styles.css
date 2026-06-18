@@ -699,6 +699,9 @@ a:hover { color: var(--accent-strong); }
 
 @media (max-width: 560px) {
   .mp-match { grid-template-columns: 1.6em 1fr; gap: var(--s3); }
+  /* no-rank cards (e.g. landing "Also on this day") stay single-column — the
+     generic .mp-match rule above must not push their body into the rank gutter */
+  .mp-match--norank { grid-template-columns: 1fr; }
   .mp-match__badge { margin-left: 0; }
   .mp-surf-cov__row { grid-template-columns: 1fr auto; }
   .mp-surf-cov__cov { grid-column: 1 / -1; text-align: left; }
