@@ -6,6 +6,7 @@
 import { mpMatchBoard } from './db';
 import type { MpBoard } from './db';
 import { matchCard, rallyPlayer, reveal } from './mpkit';
+import { rarityNote } from './mpRarity';
 import { escapeHtml } from './components/searchBox';
 import { surfaceColor } from './palette';
 import { prefersReducedMotion } from './motion';
@@ -188,6 +189,7 @@ export function matchExplorer(opts: MatchExplorerOpts): HTMLElement {
         rank: i + 1,
         badge: opts.badge ? opts.badge(m) : undefined,
         showLoserRank: opts.showLoserRank,
+        note: rarityNote(m.match_id),
       })));
     results.appendChild(list);
     const foot = resultFoot(page.rows.length, page.total, depth, filtered(),

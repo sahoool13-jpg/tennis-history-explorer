@@ -79,6 +79,8 @@ export interface MatchCardOpts {
   yearOnly?: boolean;
   // show the loser's rank-at-the-time after their name, e.g. "def. Berdych (#8)"
   showLoserRank?: boolean;
+  // curated rarity microcopy (trusted HTML) shown beneath the card; see mpRarity
+  note?: string;
 }
 
 export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
@@ -95,6 +97,9 @@ export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
     .filter(Boolean).map((s) => escapeHtml(String(s))).join(' · ');
   const loserRank = opts.showLoserRank && m.loser_rank != null
     ? ` <span class="mp-match__seed tnum">#${m.loser_rank}</span>` : '';
+  // curated rarity line (trusted constant HTML from mpRarity); absent on most rows
+  const note = opts.note
+    ? `<p class="mp-match__rarity">${opts.note}</p>` : '';
   el.innerHTML = `
     ${rank}
     <div class="mp-match__body">
@@ -110,6 +115,7 @@ export function matchCard(m: MpMatch, opts: MatchCardOpts = {}): HTMLElement {
         <span class="mp-sep">·</span>${escapeHtml(when)}
         ${badge}
       </p>
+      ${note}
     </div>`;
   return el;
 }

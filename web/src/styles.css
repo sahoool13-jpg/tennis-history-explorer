@@ -670,6 +670,21 @@ a:hover { color: var(--accent-strong); }
 .mp-dot { width: 9px; height: 9px; border-radius: 2px; background: var(--c, var(--ink-faint)); flex: none; display: inline-block; }
 .mp-sep { color: var(--line); }
 
+/* rarity context — secondary editorial microcopy on a curated few standouts.
+   A short optic-yellow court-tick is the only pop; the line stays quiet. */
+.mp-match__rarity {
+  position: relative;
+  margin: var(--s3) 0 0;
+  padding-left: var(--s4);
+  font-size: 0.8rem; line-height: 1.45;
+  color: var(--ink-soft); max-width: 54ch;
+}
+.mp-match__rarity::before {
+  content: ""; position: absolute; left: 0; top: 0.55em;
+  width: 11px; height: 2px; background: var(--accent);
+}
+.mp-match__rarity strong { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums lining-nums; }
+
 @media (prefers-reduced-motion: reduce) { .mp-match { opacity: 1; transform: none; } }
 
 /* ----- player boards: Match Point accent on the leaders ------------------ */
