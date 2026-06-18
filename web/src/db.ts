@@ -500,10 +500,11 @@ export function matchesOnDates(mmdds: number[], limit = 8): Promise<MpMatch[]> {
       WHERE m.won
         AND (EXTRACT(month FROM m.tourney_date) * 100
              + EXTRACT(day FROM m.tourney_date)) IN (${set.join(',')})
-      ORDER BY (m.round = 'F') DESC,
+      ORDER BY
         CASE m.tourney_level WHEN 'G' THEN 4 WHEN 'M' THEN 3 WHEN 'F' THEN 2
                              WHEN 'O' THEN 2 WHEN 'A' THEN 1 ELSE 0 END DESC,
-        m.round_order DESC, m.tourney_date DESC, m.match_id
+        m.round_order DESC, m.opp_rank ASC NULLS LAST,
+        m.tourney_date DESC, m.match_id
       LIMIT ${limit | 0}`);
 }
 

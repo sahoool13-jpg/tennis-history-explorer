@@ -783,6 +783,30 @@ body.landing-mode .sitefoot { display: none; }
 }
 .lp-hero__lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 52ch; margin: 0 0 var(--s6); }
 .lp-otd__note { margin: 0 0 var(--s4); font-size: var(--t-cap); }
+.lp-otd__more { margin: var(--s6) 0 var(--s3); }
+
+/* headline result — the day's biggest match, scoreline-as-hero */
+.lp-headline { padding: var(--s4) 0 var(--s5); border-top: 2px solid var(--ink); }
+.lp-headline__eyebrow { margin: 0 0 var(--s3); color: var(--ink-soft); }
+.lp-headline__score .mp-scoreline { font-size: clamp(2.1rem, 7vw, 3.2rem); }
+.lp-headline__who { margin: var(--s3) 0 0; font-size: 1.05rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.4em; }
+.lp-headline__who a { font-family: var(--font-head); font-weight: 700; border-bottom: 2px solid transparent; }
+.lp-headline__who a:hover { color: var(--accent-strong); border-color: var(--accent); }
+.lp-headline__beat { color: var(--ink-faint); font-style: italic; font-weight: 500; }
+.lp-headline__seed { color: var(--accent-strong); font-family: var(--font-head); font-weight: 700; font-size: 0.85rem; }
+.lp-headline__surface { display: inline-flex; align-items: center; gap: var(--s2); margin-left: auto; font-size: var(--t-cap); color: var(--ink-soft); }
+
+/* number of the day — one rotating figure */
+.lp-number { border-top: 1px solid var(--line); padding-top: var(--s5); }
+.lp-number__fig {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(2.6rem, 9vw, 4.2rem); line-height: 0.95; letter-spacing: -0.03em;
+  color: var(--ink); margin: var(--s2) 0 0;
+}
+.lp-number__unit { margin: var(--s2) 0 0; color: var(--ink-soft); font-size: 1rem; }
+.lp-number__who { margin: var(--s1) 0 0; font-family: var(--font-head); font-weight: 600; }
+.lp-number__who a { border-bottom: 1px solid var(--accent); padding-bottom: 1px; }
+.lp-number__who a:hover { color: var(--accent-strong); }
 
 /* ----- daily puzzle ------------------------------------------------------ */
 .lp-puzzle { margin-bottom: var(--s8); }

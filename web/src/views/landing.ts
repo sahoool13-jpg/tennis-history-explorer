@@ -3,10 +3,17 @@
 // Rally, Match Point, Records and the eras view. Reads only verified data; no
 // number is recomputed here.
 import { matchesOnDates, puzzlePool } from '../db';
-import { matchCard, reveal } from '../mpkit';
+import { matchCard, scoreline, reveal, rallyPlayer } from '../mpkit';
 import { escapeHtml } from '../components/searchBox';
+import { surfaceColor } from '../palette';
 import { renderPuzzle, puzzleDate } from '../landing/puzzle';
+import { renderNumberOfDay } from '../landing/numberOfDay';
 import type { MpMatch } from '../types';
+
+const ROUND_LABEL: Record<string, string> = {
+  F: 'final', SF: 'semifinal', QF: 'quarterfinal', R16: 'round of 16',
+  R32: 'round of 32', R64: 'round of 64', R128: 'round of 128', RR: 'round robin',
+};
 
 const BASE = import.meta.env.BASE_URL;
 const PUZZLE_FLOOR = 'top-30 peak ranking and 300+ tour matches';
@@ -33,8 +40,8 @@ export async function renderLanding(mount: HTMLElement): Promise<void> {
   hero.innerHTML = `
     <p class="eyebrow">On this day · ATP tour-level singles · 2000–present</p>
     <h1 class="lp-hero__title">${escapeHtml(longDate)}</h1>
-    <p class="lp-hero__lede">What happened on this date across a quarter-century
-      of the men's tour — finals first, then the matches worth remembering.</p>
+    <p class="lp-hero__lede">The biggest matches from tournaments dated to this day
+      across the seasons — Grand Slam stage first. (Dates follow each event's start.)</p>
     <div class="lp-otd"><p class="loading">Loading the almanac…</p></div>`;
   mount.appendChild(hero);
   void fillOnThisDay(hero.querySelector<HTMLElement>('.lp-otd')!, now);
@@ -52,6 +59,13 @@ export async function renderLanding(mount: HTMLElement): Promise<void> {
     <div class="lp-puzzle__mount"><p class="loading">Loading today's player…</p></div>`;
   mount.appendChild(pz);
   void fillPuzzle(pz.querySelector<HTMLElement>('.lp-puzzle__mount')!, pd);
+
+  // --- number of the day --------------------------------------------------
+  const num = document.createElement('section');
+  num.className = 'lp-number panel';
+  num.innerHTML = `<p class="loading">…</p>`;
+  mount.appendChild(num);
+  void renderNumberOfDay(num, pd.seed);
 
   // --- doors --------------------------------------------------------------
   mount.appendChild(doors());
@@ -109,20 +123,50 @@ async function fillOnThisDay(host: HTMLElement, now: Date): Promise<void> {
       note.textContent = 'A quiet day on this exact date — showing this week in tennis instead.';
       host.appendChild(note);
     }
-    const list = document.createElement('div');
-    list.className = 'mp-matchlist';
-    matches.forEach((m: MpMatch) => {
-      list.appendChild(matchCard(m, {
-        yearOnly: true,
-        badge: m.round === 'F' ? 'Final' : undefined,
-      }));
-    });
-    host.appendChild(list);
+    // headline: the single most significant match (biggest stage first)
+    host.appendChild(headlineResult(matches[0]));
+    // the rest, as a tighter list
+    if (matches.length > 1) {
+      const more = document.createElement('p');
+      more.className = 'eyebrow lp-otd__more';
+      more.textContent = 'Also on this day';
+      host.appendChild(more);
+      const list = document.createElement('div');
+      list.className = 'mp-matchlist';
+      matches.slice(1).forEach((m: MpMatch) => {
+        list.appendChild(matchCard(m, {
+          yearOnly: true,
+          badge: m.round === 'F' ? 'Final' : undefined,
+        }));
+      });
+      host.appendChild(list);
+    }
     requestAnimationFrame(() => reveal(host.querySelectorAll<HTMLElement>('.mp-match')));
   } catch (err) {
     console.error('Landing: On This Day failed —', err);
     host.innerHTML = `<p class="lb-error">Couldn't load the almanac. Try refreshing.</p>`;
   }
+}
+
+// The day's headline match, presented prominently (scoreline-as-hero).
+function headlineResult(m: MpMatch): HTMLElement {
+  const el = document.createElement('article');
+  el.className = 'lp-headline';
+  const c = surfaceColor(m.surface);
+  const round = m.round ? (ROUND_LABEL[m.round] ?? m.round.toLowerCase()) : '';
+  const stage = [m.level_label, round].filter(Boolean).map((s) => escapeHtml(String(s))).join(' ');
+  const rank = m.loser_rank != null ? ` <span class="lp-headline__seed tnum">#${m.loser_rank}</span>` : '';
+  const year = (m.date || '').slice(0, 4);
+  el.innerHTML = `
+    <p class="eyebrow lp-headline__eyebrow">${escapeHtml(stage)} · ${escapeHtml(m.tourney_name ?? '')} ${escapeHtml(year)}</p>
+    <div class="lp-headline__score">${scoreline(m.set_scores)}</div>
+    <p class="lp-headline__who">
+      <a href="${rallyPlayer(m.winner_id)}">${escapeHtml(m.winner_name)}</a>
+      <span class="lp-headline__beat">def.</span>
+      <a href="${rallyPlayer(m.loser_id)}">${escapeHtml(m.loser_name)}</a>${rank}
+      <span class="lp-headline__surface"><span class="mp-dot" style="--c:${c}"></span>${escapeHtml(m.surface)}</span>
+    </p>`;
+  return el;
 }
 
 async function fillPuzzle(host: HTMLElement, pd: ReturnType<typeof puzzleDate>): Promise<void> {
