@@ -1,9 +1,11 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
-// base must match the GitHub Pages project path so deployed asset URLs resolve.
+// Served at the root of the custom domain (unforcederror.app), so assets and
+// data resolve from '/'. The CNAME in public/ is copied to dist/ to keep the
+// custom domain attached across Actions deploys.
 export default defineConfig({
-  base: '/tennis-history-explorer/',
+  base: '/',
   // duckdb-wasm ships its own wasm/worker; let Vite serve them via ?url imports
   // rather than trying to pre-bundle them.
   optimizeDeps: {
